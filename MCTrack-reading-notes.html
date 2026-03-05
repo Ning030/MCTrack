@@ -484,11 +484,11 @@
 <pre><code>def transform_3dbox2corners(self, global_xyz_lwh_yaw) -> np.ndarray:
     x, y, z, l, w, h, rot = global_xyz_lwh_yaw
     orientation = Quaternion(axis=[0, 0, 1], radians=rot)
-    # 构建 8 个角点的局部坐标
-    x_corners = np.array([dx1,dx1,dx1,dx1,dx2,dx2,dx2,dx2]) * [1,1,1,1,-1,-1,-1,-1]
-    # ... 旋转 + 平移 ...
-    corners = np.dot(orientation.rotation_matrix, corners)
-    corners[0,:] += x; corners[1,:] += y; corners[2,:] += z
+    # 构建 8 个角点的局部坐标 (dx1=l/2, dx2=l/2, dy1=w/2, ...)
+    x_corners = np.array([l/2]*4 + [l/2]*4) * [1,1,1,1,-1,-1,-1,-1]
+    # ... y_corners, z_corners 类似构建 ...
+    corners = np.dot(orientation.rotation_matrix, corners)  # 旋转
+    corners[0,:] += x; corners[1,:] += y; corners[2,:] += z  # 平移
     return corners.T  # shape: (8, 3)</code></pre>
 
         <h4>算法 / 模式</h4>
