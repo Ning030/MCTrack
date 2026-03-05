@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCTrack 代码阅读笔记</title>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --sidebar-bg: #1e293b;
+    --sidebar-text: #cbd5e1;
+    --sidebar-active: #38bdf8;
+    --card-bg: #ffffff;
+    --text: #1e293b;
+    --text-secondary: #475569;
+    --border: #e2e8f0;
+    --code-bg: #f1f5f9;
+    --accent: #3b82f6;
+    --accent2: #8b5cf6;
+    --accent3: #10b981;
+    --accent4: #f59e0b;
+    --badge-blue: #dbeafe;
+    --badge-blue-text: #1e40af;
+    --badge-green: #dcfce7;
+    --badge-green-text: #166534;
+    --badge-purple: #f3e8ff;
+    --badge-purple-text: #6b21a8;
+    --badge-orange: #ffedd5;
+    --badge-orange-text: #9a3412;
+    --badge-red: #fee2e2;
+    --badge-red-text: #991b1b;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    display: flex;
+  }
+  /* Sidebar */
+  .sidebar {
+    position: fixed;
+    left: 0; top: 0;
+    width: 280px;
+    height: 100vh;
+    background: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    overflow-y: auto;
+    padding: 24px 0;
+    z-index: 100;
+  }
+  .sidebar h2 {
+    color: #fff;
+    font-size: 18px;
+    padding: 0 20px 16px;
+    border-bottom: 1px solid #334155;
+    margin-bottom: 12px;
+  }
+  .sidebar a {
+    display: block;
+    color: var(--sidebar-text);
+    text-decoration: none;
+    padding: 6px 20px;
+    font-size: 14px;
+    transition: all .2s;
+  }
+  .sidebar a:hover, .sidebar a.active {
+    color: var(--sidebar-active);
+    background: rgba(56,189,248,.08);
+  }
+  .sidebar .nav-l1 { font-weight: 700; margin-top: 12px; font-size: 15px; color: #e2e8f0; }
+  .sidebar .nav-l2 { padding-left: 32px; font-size: 13px; }
+  .sidebar .nav-l3 { padding-left: 44px; font-size: 12.5px; color: #94a3b8; }
+  /* Main */
+  .main {
+    margin-left: 280px;
+    width: calc(100% - 280px);
+    padding: 40px 48px 80px;
+    max-width: 1100px;
+  }
+  h1 {
+    font-size: 32px;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+  .subtitle {
+    color: var(--text-secondary);
+    font-size: 15px;
+    margin-bottom: 32px;
+  }
+  h2 {
+    font-size: 24px;
+    margin: 40px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--accent);
+    color: var(--text);
+  }
+  h3 {
+    font-size: 20px;
+    margin: 28px 0 12px;
+    color: var(--accent2);
+  }
+  h4 {
+    font-size: 17px;
+    margin: 20px 0 8px;
+    color: var(--text);
+  }
+  p { margin-bottom: 12px; }
+  /* Badge */
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    vertical-align: middle;
+  }
+  .badge-blue { background: var(--badge-blue); color: var(--badge-blue-text); }
+  .badge-green { background: var(--badge-green); color: var(--badge-green-text); }
+  .badge-purple { background: var(--badge-purple); color: var(--badge-purple-text); }
+  .badge-orange { background: var(--badge-orange); color: var(--badge-orange-text); }
+  .badge-red { background: var(--badge-red); color: var(--badge-red-text); }
+  /* Code */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 12px 0 16px;
+  }
+  code {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+    font-size: 13px;
+  }
+  :not(pre) > code {
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #c2410c;
+  }
+  /* Syntax highlighting */
+  .kw { color: #8b5cf6; font-weight: 600; }
+  .fn { color: #2563eb; }
+  .st { color: #16a34a; }
+  .cm { color: #94a3b8; font-style: italic; }
+  .nb { color: #d97706; }
+  .op { color: #64748b; }
+  .ref { color: #6b7280; font-size: 12px; }
+  /* Card */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin: 16px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  }
+  /* Table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 16px;
+    font-size: 14px;
+  }
+  th {
+    background: var(--code-bg);
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    border: 1px solid var(--border);
+  }
+  td {
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:hover td { background: #f8fafc; }
+  /* List */
+  ul, ol { padding-left: 24px; margin-bottom: 12px; }
+  li { margin-bottom: 4px; }
+  /* Call chain */
+  .call-chain {
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 8px;
+    padding: 18px 22px;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    overflow-x: auto;
+    margin: 12px 0 16px;
+  }
+  .call-chain .kw { color: #c084fc; }
+  .call-chain .fn { color: #60a5fa; }
+  .call-chain .st { color: #4ade80; }
+  .call-chain .cm { color: #64748b; }
+  .call-chain .nb { color: #fbbf24; }
+  .arrow { color: #38bdf8; }
+  /* Print */
+  @media print {
+    .sidebar { display: none !important; }
+    .main { margin-left: 0; width: 100%; max-width: 100%; padding: 20px; }
+    h2 { page-break-before: always; }
+    pre, .call-chain { font-size: 11px; }
+  }
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; width: 100%; padding: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== Sidebar ==================== -->
+<nav class="sidebar">
+  <h2>📖 MCTrack 阅读笔记</h2>
+
+  <a href="#layer1" class="nav-l1">一、项目全貌</a>
+  <a href="#l1-what" class="nav-l2">1.1 项目简介</a>
+  <a href="#l1-dir" class="nav-l2">1.2 目录结构</a>
+  <a href="#l1-modules" class="nav-l2">1.3 核心功能模块</a>
+  <a href="#l1-run" class="nav-l2">1.4 快速复现</a>
+
+  <a href="#layer2" class="nav-l1">二、项目骨架</a>
+  <a href="#l2-main" class="nav-l2">2.1 主追踪流程</a>
+  <a href="#l2-data" class="nav-l2">2.2 数据加载链</a>
+  <a href="#l2-track" class="nav-l2">2.3 单帧追踪链</a>
+  <a href="#l2-match" class="nav-l2">2.4 匹配关联链</a>
+  <a href="#l2-kalman" class="nav-l2">2.5 卡尔曼滤波链</a>
+  <a href="#l2-eval" class="nav-l2">2.6 评估流程链</a>
+  <a href="#l2-preprocess" class="nav-l2">2.7 预处理链</a>
+
+  <a href="#layer3" class="nav-l1">三、节点详解</a>
+  <a href="#l3-base3dtracker" class="nav-l2">3.1 Base3DTracker</a>
+  <a href="#l3-trajectory" class="nav-l2">3.2 Trajectory</a>
+  <a href="#l3-bbox" class="nav-l2">3.3 BBox</a>
+  <a href="#l3-frame" class="nav-l2">3.4 Frame</a>
+  <a href="#l3-matching" class="nav-l2">3.5 匹配算法</a>
+  <a href="#l3-cost" class="nav-l2">3.6 代价函数</a>
+  <a href="#l3-kalman-detail" class="nav-l2">3.7 卡尔曼滤波器</a>
+  <a href="#l3-dataset" class="nav-l2">3.8 数据集加载</a>
+  <a href="#l3-config" class="nav-l2">3.9 配置变量映射</a>
+</nav>
+
+<!-- ==================== Main Content ==================== -->
+<div class="main">
+
+<h1>MCTrack 代码阅读笔记</h1>
+<p class="subtitle">统一的三维多目标追踪框架 — IROS 2025 · megvii-research · 支持 KITTI / nuScenes / Waymo</p>
+
+<!-- ==================== 第一层: 项目全貌 ==================== -->
+<h2 id="layer1">一、项目全貌</h2>
+
+<!-- 1.1 -->
+<h3 id="l1-what">1.1 项目简介</h3>
+<div class="card">
+  <p><strong>MCTrack</strong>（<span class="badge badge-blue">Multi-Camera Track</span>）是一个<strong>统一的三维多目标追踪（3D MOT）框架</strong>，面向自动驾驶场景，已被 <span class="badge badge-green">IROS 2025</span> 接收。</p>
+  <p><strong>解决的问题：</strong>现有跟踪方法往往针对单一数据集设计，跨数据集泛化能力差。MCTrack 提出统一的 <span class="badge badge-purple">BaseVersion</span> 数据格式和通用追踪管线，在 KITTI、nuScenes、Waymo 三大基准上同时达到 SOTA。</p>
+  <p><strong>核心亮点：</strong></p>
+  <ul>
+    <li>统一的 BaseVersion 数据格式，消除数据集差异</li>
+    <li>BEV + RV 双阶段匹配策略</li>
+    <li>支持 CV / CA / CTRA 三种运动模型的扩展卡尔曼滤波</li>
+    <li>创新的运动指标评估体系（VAE / VNE / VDE 等）</li>
+    <li>支持在线（ONLINE）和全局（GLOBAL）两种追踪模式</li>
+  </ul>
+  <p class="ref">来源：<code>README.md:1-45</code></p>
+</div>
+
+<!-- 1.2 -->
+<h3 id="l1-dir">1.2 目录结构</h3>
+<pre>
+MCTrack/
+├── <span class="fn">main.py</span>                   <span class="cm"># 入口：追踪 + 评估</span>
+├── <span class="fn">requirements.txt</span>           <span class="cm"># 依赖列表</span>
+├── <span class="fn">config/</span>                    <span class="cm"># YAML 配置文件</span>
+│   ├── kitti.yaml             <span class="cm"># KITTI 配置</span>
+│   ├── kitti_offline.yaml     <span class="cm"># KITTI 离线模式</span>
+│   ├── nuscenes.yaml          <span class="cm"># nuScenes 配置</span>
+│   ├── nuscenes_motion_eval.yaml <span class="cm"># 运动指标评估配置</span>
+│   └── waymo.yaml             <span class="cm"># Waymo 配置</span>
+├── <span class="fn">tracker/</span>                   <span class="cm"># 核心追踪模块</span>
+│   ├── base_tracker.py        <span class="cm"># Base3DTracker 主追踪器</span>
+│   ├── trajectory.py          <span class="cm"># Trajectory 轨迹管理</span>
+│   ├── bbox.py                <span class="cm"># BBox 边界框表示</span>
+│   ├── frame.py               <span class="cm"># Frame 帧信息</span>
+│   ├── matching.py            <span class="cm"># 匹配算法 (Hungarian/Greedy)</span>
+│   └── cost_function.py       <span class="cm"># 代价函数 (RO-GDIoU 等)</span>
+├── <span class="fn">dataset/</span>                   <span class="cm"># 数据加载</span>
+│   └── baseversion_dataset.py <span class="cm"># BaseVersion 数据集类</span>
+├── <span class="fn">kalmanfilter/</span>              <span class="cm"># 卡尔曼滤波</span>
+│   ├── base_kalman.py         <span class="cm"># KF_Base 抽象基类</span>
+│   └── extend_kalman.py       <span class="cm"># EKF_CV / EKF_CA / EKF_CTRA / KF_YAW / KF_SIZE</span>
+├── <span class="fn">preprocess/</span>                <span class="cm"># 数据预处理</span>
+│   ├── convert2baseversion.py <span class="cm"># 格式转换入口</span>
+│   ├── convert_kitti.py       <span class="cm"># KITTI 转换</span>
+│   ├── convert_nuscenes.py    <span class="cm"># nuScenes 转换</span>
+│   ├── convert_waymo.py       <span class="cm"># Waymo 转换</span>
+│   └── motion_dataset/        <span class="cm"># 运动评估数据准备</span>
+├── <span class="fn">evaluation/</span>                <span class="cm"># 评估模块</span>
+│   ├── eval_motion.py         <span class="cm"># 运动指标评估入口</span>
+│   ├── static_evaluation/     <span class="cm"># 传统 MOT 评估</span>
+│   │   ├── kitti/             <span class="cm"># HOTA 评估</span>
+│   │   ├── nuscenes/eval.py   <span class="cm"># nuScenes 评估</span>
+│   │   └── waymo/eval.py      <span class="cm"># Waymo 评估</span>
+│   └── motion_evaluation/     <span class="cm"># 运动指标评估</span>
+│       ├── compare_base.py    <span class="cm"># CompareBase 比较类</span>
+│       ├── metric_for_track.py    <span class="cm"># MOT 指标</span>
+│       ├── metric_for_velocity.py <span class="cm"># 速度指标</span>
+│       └── Posebox.py         <span class="cm"># 位姿框工具</span>
+├── <span class="fn">utils/</span>                     <span class="cm"># 工具函数</span>
+│   ├── utils.py               <span class="cm"># 弧度归一化、NMS 等</span>
+│   ├── kitti_utils.py         <span class="cm"># KITTI 结果保存/坐标转换</span>
+│   ├── nusc_utils.py          <span class="cm"># nuScenes 结果保存/NMS</span>
+│   ├── file_process.py        <span class="cm"># 文件 IO</span>
+│   └── waymo_utils/           <span class="cm"># Waymo 工具</span>
+└── <span class="fn">docs/</span>                      <span class="cm"># 文档与图片</span>
+</pre>
+
+<!-- 1.3 -->
+<h3 id="l1-modules">1.3 核心功能模块</h3>
+<table>
+  <tr><th>模块</th><th>文件</th><th>职责</th></tr>
+  <tr>
+    <td><span class="badge badge-blue">追踪引擎</span></td>
+    <td><code>tracker/base_tracker.py</code></td>
+    <td>管理所有活跃/死亡轨迹，执行逐帧 predict → associate → update 循环</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-green">轨迹管理</span></td>
+    <td><code>tracker/trajectory.py</code></td>
+    <td>维护单条轨迹的卡尔曼滤波器组（pose / yaw / size），执行 predict / update / unmatch_update</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-purple">匹配关联</span></td>
+    <td><code>tracker/matching.py</code></td>
+    <td>BEV + RV 双阶段匹配，支持 Hungarian / Greedy 算法</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-orange">代价函数</span></td>
+    <td><code>tracker/cost_function.py</code></td>
+    <td>RO-GDIoU（3D）、SDIoU / DIoU / GIoU / IoU（2D）</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-red">运动预测</span></td>
+    <td><code>kalmanfilter/extend_kalman.py</code></td>
+    <td>EKF_CV / EKF_CA / EKF_CTRA 三种运动模型</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-blue">数据加载</span></td>
+    <td><code>dataset/baseversion_dataset.py</code></td>
+    <td>统一 BaseVersion 格式的数据集加载器</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-green">评估</span></td>
+    <td><code>evaluation/</code></td>
+    <td>传统 MOT 评估 + 运动指标（VAE / VNE / VDE 等）</td>
+  </tr>
+</table>
+
+<!-- 1.4 -->
+<h3 id="l1-run">1.4 快速复现</h3>
+<div class="card">
+<h4>① 环境安装</h4>
+<pre>
+<span class="cm"># 创建 conda 环境</span>
+conda create -n MCTrack python=3.8
+conda activate MCTrack
+
+<span class="cm"># 安装依赖（requirements.txt:1-9）</span>
+pip install -r requirements.txt
+<span class="cm"># 核心依赖: PyYAML, lap, easydict, motmetrics==1.1.3,</span>
+<span class="cm">#           numba==0.58.1, numpy==1.22.0, pandas==1.5.0,</span>
+<span class="cm">#           pillow==10.4.0, nuscenes-devkit==1.1.11</span>
+</pre>
+
+<h4>② 数据准备</h4>
+<pre>
+<span class="cm"># 步骤 1: 下载原始数据集 + 检测结果</span>
+<span class="cm"># 步骤 2: 转换为 BaseVersion 格式</span>
+python preprocess/convert2baseversion.py --dataset kitti
+<span class="cm"># 输出: data/base_version/kitti/{detector}/{split}.json</span>
+</pre>
+
+<h4>③ 运行追踪 + 评估</h4>
+<pre>
+<span class="cm"># 单进程运行</span>
+python main.py --dataset kitti -e -p 1
+
+<span class="cm"># 多进程运行（8 workers）</span>
+python main.py --dataset kitti -e -p 8
+
+<span class="cm"># nuScenes / Waymo</span>
+python main.py --dataset nuscenes -e -p 8
+python main.py --dataset waymo -e -p 8
+
+<span class="cm"># 离线模式</span>
+python main.py --dataset kitti -e -m
+
+<span class="cm"># 调试模式（仅处理 2 个场景）</span>
+python main.py --dataset kitti --debug
+</pre>
+<p class="ref">来源：<code>main.py:90-177</code>, <code>README.md:255-278</code></p>
+</div>
+
+<!-- ==================== 第二层: 项目骨架 ==================== -->
+<h2 id="layer2">二、项目骨架</h2>
+
+<!-- 2.1 -->
+<h3 id="l2-main">2.1 主追踪流程调用链</h3>
+<p>从 <code>main.py</code> 入口开始的主要执行流程：</p>
+<div class="call-chain">
+<span class="fn">__main__</span> <span class="cm"># main.py:90</span>
+├── 解析命令行参数 <span class="cm"># argparse: --dataset, -e, -p, -m, --debug</span>
+├── <span class="fn">yaml.load</span>(cfg_path) <span class="cm"># 加载 config/{dataset}.yaml → cfg 字典</span>
+├── <span class="fn">json.load</span>(detections_root) <span class="cm"># 加载 BaseVersion JSON 检测数据</span>
+├── 构建场景列表 scene_lists
+├── <span class="kw">multiprocessing.Pool</span>.map(<span class="fn">run</span>, scene_lists) <span class="cm"># 多进程追踪</span>
+│   └── <span class="fn">run</span>(scene_id, scenes_data, cfg, args, tracking_results) <span class="cm"># main.py:27</span>
+│       ├── <span class="fn">BaseVersionTrackingDataset</span>(scene_id, scene_data, cfg) <span class="cm"># 构建数据集</span>
+│       ├── <span class="fn">Base3DTracker</span>(cfg) <span class="cm"># 初始化追踪器</span>
+│       ├── <span class="kw">for</span> index <span class="kw">in</span> range(len(dataset)):
+│       │   ├── frame_info = dataset[index] <span class="cm"># 获取 Frame 对象</span>
+│       │   ├── tracker.<span class="fn">track_single_frame</span>(frame_info) <span class="cm"># 核心追踪</span>
+│       │   └── 保存帧结果 → all_trajs[frame_id]
+│       └── <span class="kw">if</span> GLOBAL模式: tracker.<span class="fn">post_processing</span>() <span class="cm"># 离线后处理</span>
+├── <span class="fn">save_results_{dataset}</span>(tracking_results, ...) <span class="cm"># 保存结果</span>
+└── <span class="kw">if</span> args.eval: <span class="fn">eval_{dataset}</span>(cfg) <span class="cm"># 运行评估</span>
+</div>
+
+<!-- 2.2 -->
+<h3 id="l2-data">2.2 数据加载链</h3>
+<div class="call-chain">
+<span class="fn">BaseVersionTrackingDataset.__getitem__</span>(index) <span class="cm"># dataset/baseversion_dataset.py:23</span>
+├── 从 scene_data[index] 解析: frame_id, timestamp, bboxes, transform_matrix
+├── 构造 <span class="fn">Frame</span>(frame_id, cur_sample_token, timestamp, transform_matrix) <span class="cm"># tracker/frame.py:9</span>
+├── 过滤 bboxes: 仅保留 CATEGORY_MAP_TO_NUMBER 中定义的类别
+├── 按 INPUT_SCORE 阈值过滤低置信度检测
+├── <span class="kw">if</span> nuscenes: <span class="fn">filter_bboxes_with_nms</span>(filtered_bboxes, cfg) <span class="cm"># NMS 去重</span>
+│   ├── <span class="fn">obtain_box_bottom_corners</span>(dets) <span class="cm"># 计算 BEV 底面角点</span>
+│   └── <span class="fn">blend_nms</span>(box_infos, "iou_bev", thre) <span class="cm"># BEV IoU NMS</span>
+└── <span class="kw">for</span> bbox <span class="kw">in</span> filtered_bboxes:
+    └── cur_frame.bboxes.append(<span class="fn">BBox</span>(frame_id, bbox)) <span class="cm"># 封装为 BBox 对象</span>
+</div>
+
+<!-- 2.3 -->
+<h3 id="l2-track">2.3 单帧追踪链</h3>
+<p>这是整个系统的<strong>核心循环</strong>，每一帧的处理逻辑：</p>
+<div class="call-chain">
+<span class="fn">Base3DTracker.track_single_frame</span>(frame_info) <span class="cm"># tracker/base_tracker.py:33</span>
+│
+├── <span class="nb">Step 1: 预测</span>
+│   └── <span class="fn">predict_before_associate</span>() <span class="cm"># :29</span>
+│       └── <span class="kw">for</span> traj <span class="kw">in</span> all_trajs: traj.<span class="fn">predict</span>()
+│           ├── kalman_filter_pose.<span class="fn">predict</span>() <span class="cm"># 预测位置</span>
+│           ├── kalman_filter_yaw.<span class="fn">predict</span>()  <span class="cm"># 预测朝向</span>
+│           └── kalman_filter_size.<span class="fn">predict</span>() <span class="cm"># 预测尺寸</span>
+│
+├── <span class="nb">Step 2: 第一阶段匹配 (BEV)</span>
+│   └── <span class="fn">match_trajs_and_dets</span>(trajs, dets, cfg) <span class="cm"># matching.py:107</span>
+│       ├── <span class="fn">cost_calculate_general</span>(trajs, dets, cfg) <span class="cm"># 计算代价矩阵</span>
+│       │   └── <span class="fn">cal_rotation_gdiou_inbev</span>(trk, det) <span class="cm"># RO-GDIoU 3D</span>
+│       ├── <span class="fn">mask_tras_dets</span>(cls_num, ...) <span class="cm"># 类别掩码</span>
+│       └── <span class="fn">Hungarian</span>() / <span class="fn">Greedy</span>() <span class="cm"># 匹配求解</span>
+│
+├── <span class="nb">Step 3: 更新匹配的轨迹</span>
+│   └── traj.<span class="fn">update</span>(det_bbox, cost) <span class="cm"># trajectory.py:186</span>
+│       ├── kalman_filter_pose.<span class="fn">update</span>(pose_mesure) <span class="cm"># 位置滤波更新</span>
+│       ├── kalman_filter_yaw.<span class="fn">update</span>(yaw_mesure)   <span class="cm"># 朝向滤波更新</span>
+│       └── kalman_filter_size.<span class="fn">update</span>(size_mesure)  <span class="cm"># 尺寸滤波更新</span>
+│
+├── <span class="nb">Step 4: 第二阶段匹配 (RV, 可选)</span>
+│   └── <span class="kw">if</span> IS_RV_MATCHING:
+│       ├── <span class="fn">match_trajs_and_dets</span>(..., is_rv=<span class="kw">True</span>) <span class="cm"># 2D 图像匹配</span>
+│       │   └── <span class="fn">cal_sdiou_inrv</span>() <span class="cm"># SDIoU 2D 代价</span>
+│       ├── 旋转/距离验证: diff_rot &gt; 90° 或 dist &gt; 5m → 拒绝
+│       └── traj.<span class="fn">update</span>() / traj.<span class="fn">unmatch_update</span>()
+│
+├── <span class="nb">Step 5: 未匹配检测 → 新轨迹</span>
+│   └── <span class="fn">Trajectory</span>(track_id, init_bbox, cfg) <span class="cm"># 创建新轨迹</span>
+│
+├── <span class="nb">Step 6: 死亡轨迹清理</span>
+│   └── <span class="kw">if</span> status_flag == 4: 移至 all_dead_trajs
+│
+└── <span class="nb">Step 7: 输出</span>
+    └── <span class="fn">get_output_trajs</span>(frame_id) <span class="cm"># 过滤可输出的轨迹</span>
+</div>
+
+<!-- 2.4 -->
+<h3 id="l2-match">2.4 匹配关联链</h3>
+<div class="call-chain">
+<span class="fn">match_trajs_and_dets</span>(trajs, dets, cfg, transform_matrix, is_rv) <span class="cm"># matching.py:107</span>
+│
+├── <span class="fn">cost_calculate_general</span>(trajs, dets, cfg, transform_matrix, is_rv) <span class="cm"># :163</span>
+│   ├── <span class="kw">for</span> (t, trk), (d, det):
+│   │   ├── choose_cost_func(is_rv, cost_mode) <span class="cm"># 选择代价函数</span>
+│   │   │   ├── BEV: <span class="fn">cal_rotation_gdiou_inbev</span>
+│   │   │   └── RV:  <span class="fn">cal_sdiou_inrv</span> / <span class="fn">cal_diou_inrv</span> / <span class="fn">cal_giou_inrv</span> / <span class="fn">cal_iou_inrv</span>
+│   │   ├── pred_cost = cal_cost_func(trk, det, cfg, <span class="st">"Predict"</span>)
+│   │   └── no_pred_cost = cal_cost_func(trk, det, cfg, <span class="st">"BackPredict"</span>)
+│   ├── cost_matrix = <span class="nb">1 - cost_matrix</span> <span class="cm"># 相似度 → 代价</span>
+│   └── 类别不同的对设为 np.inf
+│
+├── <span class="fn">mask_tras_dets</span>(cls_num, trajs_label, dets_label) <span class="cm"># 类别掩码 utils.py:99</span>
+│
+└── <span class="kw">if</span> MATCHING_MODE == <span class="st">"Hungarian"</span>:
+    │   <span class="fn">Hungarian</span>(trans_cost_matrix, COST_THRE) <span class="cm"># matching.py:61</span>
+    │   └── <span class="fn">lap.lapjv</span>(cls_cost, extend_cost=True, cost_limit=thre) <span class="cm"># 线性分配</span>
+    └── <span class="kw">elif</span> <span class="st">"Greedy"</span>:
+        <span class="fn">Greedy</span>(trans_cost_matrix, COST_THRE) <span class="cm"># matching.py:12</span>
+        └── 逐检测贪心选最小代价轨迹
+</div>
+
+<!-- 2.5 -->
+<h3 id="l2-kalman">2.5 卡尔曼滤波链</h3>
+<div class="call-chain">
+<span class="fn">Trajectory.__init__</span>() <span class="cm"># trajectory.py:19</span>
+├── 初始化三个位姿滤波器（根据 MOTION_MODE 选择使用哪个）：
+│   ├── <span class="fn">EKF_CV</span>(dt, n, m, P, Q, R, init_x)   <span class="cm"># 匀速模型</span>
+│   ├── <span class="fn">EKF_CA</span>(dt, n, m, P, Q, R, init_x)   <span class="cm"># 匀加速模型</span>
+│   └── <span class="fn">EKF_CTRA</span>(dt, n, m, P, Q, R, init_x) <span class="cm"># 恒转弯率加速模型</span>
+├── <span class="fn">KF_YAW</span>(dt, n, m, P, Q, R, init_x) <span class="cm"># 朝向滤波器</span>
+└── <span class="fn">KF_SIZE</span>(dt, n, m, P, Q, R, init_x) <span class="cm"># 尺寸滤波器</span>
+
+<span class="cm">── 每个滤波器继承 KF_Base ──</span>
+
+<span class="fn">KF_Base</span> (抽象基类) <span class="cm"># kalmanfilter/base_kalman.py:14</span>
+├── <span class="fn">predict</span>() → f(x)                           <span class="cm"># 状态预测</span>
+├── <span class="fn">update</span>(z)                                   <span class="cm"># 带预测的完整更新</span>
+│   ├── x = f(x)                                <span class="cm"># 状态转移</span>
+│   ├── P = F·P·F' + Q                          <span class="cm"># 协方差预测</span>
+│   ├── G = P·H'·(H·P·H' + R)⁻¹                <span class="cm"># 卡尔曼增益</span>
+│   ├── x += G·(z - h(x))                       <span class="cm"># 状态更新</span>
+│   └── P = (I - G·H)·P                         <span class="cm"># 协方差更新</span>
+└── 抽象方法: f(x), getF(x), h(x), getH(x)
+</div>
+
+<!-- 2.6 -->
+<h3 id="l2-eval">2.6 评估流程链</h3>
+<div class="call-chain">
+<span class="cm">── 传统评估 ──</span>
+<span class="fn">eval_kitti</span>(cfg)    <span class="cm"># HOTA 评估: evaluation/static_evaluation/kitti/</span>
+<span class="fn">eval_nusc</span>(cfg)     <span class="cm"># nuScenes官方评估: evaluation/static_evaluation/nuscenes/eval.py</span>
+<span class="fn">eval_waymo</span>(cfg, p) <span class="cm"># Waymo官方评估: evaluation/static_evaluation/waymo/eval.py</span>
+
+<span class="cm">── 运动指标评估 ──</span>
+<span class="fn">main</span>(yaml_file_path) <span class="cm"># evaluation/eval_motion.py:82</span>
+├── 加载配置: nuscenes_motion_eval.yaml
+├── 4 个并行进程分别评估 4 种速度类型:
+│   ├── velocity_det       <span class="cm"># 检测器原始速度</span>
+│   ├── velocity_kalman_cv <span class="cm"># 卡尔曼滤波速度</span>
+│   ├── velocity_diff      <span class="cm"># 差分速度</span>
+│   └── velocity_curve     <span class="cm"># 曲线拟合速度</span>
+└── <span class="fn">eval_velocity_metric</span>(eval_cfg, gt, dt, velocity_type) <span class="cm"># :20</span>
+    └── <span class="fn">CompareBase</span>(gt, dt, ...) <span class="cm"># motion_evaluation/compare_base.py:10</span>
+        └── <span class="fn">get_mot_eval_results</span>()
+            ├── <span class="fn">matching_v5</span>(dt, gt, ...) <span class="cm"># 帧级匹配</span>
+            ├── <span class="fn">metric_for_mot</span>(dt_track) <span class="cm"># MOT 评估</span>
+            └── <span class="fn">metric_for_velocity</span>(gt_track, dt_track, ...) <span class="cm"># 速度评估</span>
+                <span class="cm"># 输出: VAE, VNE, VDE, VSE, VAIE, VIR, AOE, AWE, ALE, AHE, ADE</span>
+</div>
+
+<!-- 2.7 -->
+<h3 id="l2-preprocess">2.7 预处理链</h3>
+<div class="call-chain">
+<span class="fn">convert2baseversion.py</span> <span class="cm"># preprocess/convert2baseversion.py:36</span>
+├── <span class="kw">if</span> --dataset kitti:
+│   └── <span class="fn">kitti_main</span>(raw_data_path, dets_path, detector, save_path, split)
+│       <span class="cm"># 读取原始 KITTI 标定/标注/检测 → BaseVersion JSON</span>
+├── <span class="kw">elif</span> --dataset nuscenes:
+│   └── <span class="fn">nuscenes_main</span>(raw_data_path, dets_path, detector, save_path, split)
+│       <span class="cm"># 通过 nuscenes-devkit 读取 → BaseVersion JSON</span>
+└── <span class="kw">elif</span> --dataset waymo:
+    └── <span class="fn">waymo_main</span>(raw_data_path, dets_path, detector, save_path, split)
+        <span class="cm"># 读取 Waymo .npz 检测结果 → BaseVersion JSON</span>
+
+<span class="cm">输出格式 (BaseVersion JSON):</span>
+{
+  <span class="st">"scene-0001"</span>: [
+    {
+      <span class="st">"frame_id"</span>: 0,
+      <span class="st">"timestamp"</span>: 1531883530.449377,
+      <span class="st">"cur_sample_token"</span>: <span class="st">"..."</span>,
+      <span class="st">"bboxes"</span>: [
+        {
+          <span class="st">"detection_score"</span>: 0.95,
+          <span class="st">"category"</span>: <span class="st">"car"</span>,
+          <span class="st">"global_xyz"</span>: [x, y, z],
+          <span class="st">"global_yaw"</span>: 1.57,
+          <span class="st">"lwh"</span>: [4.5, 1.8, 1.5],
+          <span class="st">"global_velocity"</span>: [vx, vy],
+          <span class="st">"global_acceleration"</span>: [ax, ay],
+          <span class="st">"bbox_image"</span>: { <span class="st">"camera_type"</span>: <span class="st">"CAM_FRONT"</span>, <span class="st">"x1y1x2y2"</span>: [...] }
+        }
+      ],
+      <span class="st">"transform_matrix"</span>: { <span class="st">"global2ego"</span>: [...], <span class="st">"global2lidar"</span>: [...], ... }
+    }
+  ]
+}
+</div>
+
+<!-- ==================== 第三层: 节点详解 ==================== -->
+<h2 id="layer3">三、节点详解</h2>
+
+<!-- 3.1 -->
+<h3 id="l3-base3dtracker">3.1 Base3DTracker 类</h3>
+<div class="card">
+<p><strong>文件：</strong><code>tracker/base_tracker.py:12-161</code></p>
+<p><strong>调用位置：</strong><code>main.py:42</code> — 每个场景创建一个实例</p>
+
+<h4>类内变量</h4>
+<table>
+  <tr><th>变量</th><th>类型</th><th>含义</th></tr>
+  <tr><td><code>cfg</code></td><td>dict</td><td>从 YAML 加载的配置字典</td></tr>
+  <tr><td><code>all_trajs</code></td><td>dict</td><td>当前活跃的轨迹集合，key=track_id, value=Trajectory</td></tr>
+  <tr><td><code>all_dead_trajs</code></td><td>dict</td><td>已终止的轨迹，用于 GLOBAL 模式后处理</td></tr>
+  <tr><td><code>track_id_counter</code></td><td>int</td><td>轨迹 ID 分配计数器，单调递增</td></tr>
+</table>
+
+<h4>核心方法</h4>
+
+<p><strong><code>track_single_frame(frame_info)</code></strong> — <code>:33-138</code></p>
+<ul>
+  <li><strong>输入：</strong><code>frame_info: Frame</code> — 包含当前帧的 bboxes、transform_matrix</li>
+  <li><strong>输出：</strong><code>output_trajs: dict</code> — {track_id: BBox} 当前帧可输出的跟踪结果</li>
+  <li><strong>流程：</strong>predict → BEV 匹配 → update/unmatch → RV 匹配（可选）→ 创建新轨迹 → 清理死亡轨迹 → 输出</li>
+</ul>
+
+<p><strong><code>get_output_trajs(frame_id)</code></strong> — <code>:140-149</code></p>
+<ul>
+  <li>过滤条件：<code>status_flag == 1</code>（已确认）或 <code>frame_id &lt; 3</code>（前 3 帧全部输出）</li>
+  <li>排除纯预测框：<code>det_score == _is_filter_predict_box</code> 时跳过</li>
+</ul>
+
+<p><strong><code>post_processing()</code></strong> — <code>:151-161</code></p>
+<ul>
+  <li>全局模式（GLOBAL）专用：对所有轨迹执行 <code>filtering()</code> 插值和评分平滑</li>
+  <li>在 <code>main.py:57-86</code> 中被调用，用于轨迹插值和低分轨迹删除</li>
+</ul>
+<p class="ref">来源：<code>tracker/base_tracker.py:12-161</code></p>
+</div>
+
+<!-- 3.2 -->
+<h3 id="l3-trajectory">3.2 Trajectory 类</h3>
+<div class="card">
+<p><strong>文件：</strong><code>tracker/trajectory.py:18-378</code></p>
+<p><strong>调用位置：</strong><code>base_tracker.py:124</code> — 为未匹配的检测创建新实例</p>
+
+<h4>类内变量</h4>
+<table>
+  <tr><th>变量</th><th>含义</th><th>配置来源</th></tr>
+  <tr><td><code>track_id</code></td><td>轨迹唯一 ID</td><td>由 Base3DTracker 分配</td></tr>
+  <tr><td><code>category_num</code></td><td>类别编号</td><td><code>cfg["CATEGORY_MAP_TO_NUMBER"]</code></td></tr>
+  <tr><td><code>track_length</code></td><td>轨迹被匹配的总次数</td><td>—</td></tr>
+  <tr><td><code>unmatch_length</code></td><td>连续未匹配帧数</td><td>—</td></tr>
+  <tr><td><code>status_flag</code></td><td>轨迹状态：1=已确认, 2=遮挡, 4=死亡</td><td>—</td></tr>
+  <tr><td><code>bboxes</code></td><td>历史 BBox 列表（滑动窗口）</td><td>最大长度: <code>cfg["THRESHOLD"]["TRAJECTORY_THRE"]["CACHE_BBOX_LENGTH"]</code></td></tr>
+  <tr><td><code>frame_rate</code></td><td>帧率，用于计算 dt</td><td><code>cfg["FRAME_RATE"]</code></td></tr>
+  <tr><td><code>kalman_filter_pose</code></td><td>位姿卡尔曼滤波器</td><td>根据 <code>cfg["KALMAN_FILTER_POSE"]["MOTION_MODE"]</code> 选择 CV/CA/CTRA</td></tr>
+  <tr><td><code>kalman_filter_yaw</code></td><td>朝向卡尔曼滤波器</td><td><code>cfg["KALMAN_FILTER_YAW"]</code></td></tr>
+  <tr><td><code>kalman_filter_size</code></td><td>尺寸卡尔曼滤波器</td><td><code>cfg["KALMAN_FILTER_SIZE"]</code></td></tr>
+  <tr><td><code>_max_unmatch_len</code></td><td>最大允许未匹配帧数</td><td><code>cfg["THRESHOLD"]["TRAJECTORY_THRE"]["MAX_UNMATCH_LENGTH"]</code></td></tr>
+  <tr><td><code>_max_predict_len</code></td><td>最大预测帧数</td><td><code>cfg["THRESHOLD"]["TRAJECTORY_THRE"]["PREDICT_BBOX_LENGTH"]</code></td></tr>
+  <tr><td><code>_confirmed_track_length</code></td><td>确认所需最小追踪长度</td><td><code>cfg["THRESHOLD"]["TRAJECTORY_THRE"]["CONFIRMED_TRACK_LENGTH"]</code></td></tr>
+</table>
+
+<h4>核心方法</h4>
+
+<p><strong><code>predict()</code></strong> — <code>:168-184</code></p>
+<ul>
+  <li>依次调用 pose/yaw/size 三个卡尔曼滤波器的 <code>predict()</code></li>
+  <li>将预测结果写入 <code>bboxes[-1].global_xyz_lwh_yaw_predict</code></li>
+</ul>
+
+<p><strong><code>update(bbox, matched_score)</code></strong> — <code>:186-241</code></p>
+<ul>
+  <li><strong>输入：</strong>匹配到的检测 BBox + 匹配代价分数</li>
+  <li><strong>流程：</strong>
+    <ol>
+      <li>将新 bbox 追加到 bboxes，超过 <code>_cache_bbox_len</code> 则 pop(0)</li>
+      <li>计算差分速度 <code>cal_diff_velocity()</code> 和曲线拟合速度 <code>cal_curve_velocity()</code></li>
+      <li>用新观测更新三个滤波器 (pose → yaw → size)</li>
+      <li>融合后的状态写入 <code>global_xyz_lwh_yaw_fusion</code></li>
+      <li>根据追踪长度或匹配/检测分数，判断是否将 <code>status_flag</code> 设为 1（已确认）</li>
+    </ol>
+  </li>
+</ul>
+
+<p><strong><code>unmatch_update(frame_id)</code></strong> — <code>:243-290</code></p>
+<ul>
+  <li>未被匹配时调用，执行"假更新"：用预测值作为观测值喂给滤波器</li>
+  <li>生成 fake_bbox（<code>det_score=0, is_fake=True</code>）填充轨迹</li>
+  <li><strong>状态转移逻辑：</strong>
+    <ul>
+      <li><code>status_flag 0 → 4</code>：初始化轨迹超过确认长度仍未确认 → 死亡</li>
+      <li><code>status_flag 1 → 2</code>：已确认但连续未匹配超过 <code>_max_unmatch_len</code> → 遮挡</li>
+      <li><code>status_flag 2 → 4</code>：遮挡且连续未匹配超过 <code>_max_predict_len</code> → 死亡</li>
+    </ul>
+  </li>
+</ul>
+
+<p><strong><code>cal_diff_velocity()</code></strong> — <code>:349-361</code></p>
+<ul>
+  <li>用相邻两帧的位置差 / 时间差计算速度</li>
+</ul>
+
+<p><strong><code>cal_curve_velocity()</code></strong> — <code>:363-378</code></p>
+<ul>
+  <li>对最近 3 帧做线性拟合 (<code>scipy.optimize.curve_fit</code>)，取斜率作为速度估计</li>
+</ul>
+
+<p><strong><code>filtering()</code></strong> — <code>:299-347</code></p>
+<ul>
+  <li>全局模式后处理：对未匹配的中间帧做线性插值，平滑评分</li>
+  <li>参考自 <a href="https://github.com/hailanyi/3D-Multi-Object-Tracker">3D-Multi-Object-Tracker</a></li>
+</ul>
+<p class="ref">来源：<code>tracker/trajectory.py:18-378</code></p>
+</div>
+
+<!-- 3.3 -->
+<h3 id="l3-bbox">3.3 BBox 类</h3>
+<div class="card">
+<p><strong>文件：</strong><code>tracker/bbox.py:10-181</code></p>
+<p><strong>调用位置：</strong><code>dataset/baseversion_dataset.py:61</code> — 从 JSON 数据构造</p>
+
+<h4>类内变量</h4>
+<table>
+  <tr><th>变量</th><th>含义</th></tr>
+  <tr><td><code>frame_id</code></td><td>所属帧 ID</td></tr>
+  <tr><td><code>category</code></td><td>类别名称（如 "car"）</td></tr>
+  <tr><td><code>det_score</code></td><td>检测置信度 [0,1]</td></tr>
+  <tr><td><code>global_xyz</code></td><td>[x, y, z] 全局坐标</td></tr>
+  <tr><td><code>global_yaw</code></td><td>全局偏航角（弧度）</td></tr>
+  <tr><td><code>lwh</code></td><td>[长度, 宽度, 高度]</td></tr>
+  <tr><td><code>global_velocity</code></td><td>[vx, vy] 全局速度</td></tr>
+  <tr><td><code>global_acceleration</code></td><td>[ax, ay] 全局加速度</td></tr>
+  <tr><td><code>global_xyz_last</code></td><td>反向预测位置 (xyz - velocity × 0.5)</td></tr>
+  <tr><td><code>global_xyz_lwh_yaw</code></td><td>[x,y,z,l,w,h,yaw] 复合状态向量</td></tr>
+  <tr><td><code>global_xyz_lwh_yaw_predict</code></td><td>卡尔曼预测后的状态</td></tr>
+  <tr><td><code>global_xyz_lwh_yaw_fusion</code></td><td>卡尔曼更新后的融合状态</td></tr>
+  <tr><td><code>x1y1x2y2</code></td><td>2D 图像框 [x1, y1, x2, y2]</td></tr>
+  <tr><td><code>camera_type</code></td><td>来源相机（如 "CAM_FRONT"）</td></tr>
+  <tr><td><code>is_fake</code></td><td>是否为未匹配时生成的虚拟框</td></tr>
+  <tr><td><code>is_interpolation</code></td><td>全局模式中是否为插值框</td></tr>
+</table>
+
+<h4>核心方法</h4>
+
+<p><strong><code>backward_prediction()</code></strong> — <code>:54-56</code></p>
+<ul>
+  <li>用当前位置减去速度 × 0.5 得到"上一时刻"的估计位置</li>
+  <li>用于 BackPredict 模式下的代价计算</li>
+</ul>
+
+<p><strong><code>transform_3dbox2corners(global_xyz_lwh_yaw)</code></strong> — <code>:93-139</code></p>
+<ul>
+  <li><strong>输入：</strong>[x, y, z, l, w, h, yaw]</li>
+  <li><strong>输出：</strong>(8, 3) 的角点坐标矩阵</li>
+  <li><strong>算法：</strong>先生成以原点为中心的 8 个角点 → 用四元数旋转矩阵旋转 → 平移到目标位置</li>
+</ul>
+
+<p><strong><code>transform_bbox_global2lidar()</code></strong> — <code>:64-75</code></p>
+<ul>
+  <li>全局坐标 → 激光雷达坐标，使用 4×4 齐次变换矩阵</li>
+</ul>
+
+<p><strong><code>transform_bbox_tlbr2xywh() / transform_bbox_xywh2tlbr()</code></strong></p>
+<ul>
+  <li>2D 框格式互转：(x1,y1,x2,y2) ↔ (cx,cy,w,h)</li>
+</ul>
+<p class="ref">来源：<code>tracker/bbox.py:10-181</code></p>
+</div>
+
+<!-- 3.4 -->
+<h3 id="l3-frame">3.4 Frame 类</h3>
+<div class="card">
+<p><strong>文件：</strong><code>tracker/frame.py:9-23</code></p>
+<p><strong>调用位置：</strong><code>dataset/baseversion_dataset.py:31</code></p>
+<p>轻量数据容器，保存单帧信息：</p>
+<table>
+  <tr><th>变量</th><th>含义</th></tr>
+  <tr><td><code>frame_id</code></td><td>帧编号 (int)</td></tr>
+  <tr><td><code>cur_sample_token</code></td><td>nuScenes sample token（其他数据集可能为 None）</td></tr>
+  <tr><td><code>timestamp</code></td><td>时间戳</td></tr>
+  <tr><td><code>transform_matrix</code></td><td>变换矩阵字典 (global2ego, global2lidar 等)</td></tr>
+  <tr><td><code>bboxes</code></td><td>该帧所有检测框 List[BBox]</td></tr>
+</table>
+<p class="ref">来源：<code>tracker/frame.py:9-23</code></p>
+</div>
+
+<!-- 3.5 -->
+<h3 id="l3-matching">3.5 匹配算法详解</h3>
+<div class="card">
+<p><strong>文件：</strong><code>tracker/matching.py:1-211</code></p>
+
+<h4>match_trajs_and_dets()</h4>
+<p><code>:107-160</code> — 统一匹配入口</p>
+<ul>
+  <li><strong>输入：</strong>轨迹列表 trajs, 检测列表 dets, 配置 cfg, 可选变换矩阵, is_rv 标志</li>
+  <li><strong>输出：</strong>matched_indices (N×2 数组, 列0=轨迹索引, 列1=检测索引), costs</li>
+  <li><strong>流程：</strong>
+    <ol>
+      <li>调用 <code>cost_calculate_general()</code> 生成代价矩阵</li>
+      <li>用 <code>mask_tras_dets()</code> 构建类别掩码，异类对设为 inf</li>
+      <li>根据 <code>MATCHING_MODE</code> 调用 Hungarian 或 Greedy</li>
+    </ol>
+  </li>
+</ul>
+
+<h4>Hungarian()</h4>
+<p><code>:61-104</code> — 匈牙利算法</p>
+<ul>
+  <li>内部调用 <code>lap.lapjv(cls_cost, extend_cost=True, cost_limit=threshold)</code></li>
+  <li><code>extend_cost=True</code>：自动扩展为方阵以处理不等数量的轨迹/检测</li>
+  <li><code>cost_limit</code>：超过阈值的匹配被拒绝</li>
+  <li><strong>适用场景：</strong>最优匹配，结果全局最优</li>
+</ul>
+
+<h4>Greedy()</h4>
+<p><code>:12-58</code> — 贪心算法</p>
+<ul>
+  <li>遍历每个检测，选择代价最小的轨迹进行匹配</li>
+  <li>匹配后将该轨迹列设为 1e18（防止重复匹配）</li>
+  <li><strong>适用场景：</strong>实时性要求高的场景，复杂度 O(N²) vs Hungarian O(N³)</li>
+</ul>
+
+<h4>cost_calculate_general()</h4>
+<p><code>:163-211</code> — 代价矩阵生成</p>
+<ul>
+  <li>支持 <span class="badge badge-blue">Predict</span> / <span class="badge badge-green">BackPredict</span> / <span class="badge badge-purple">Fusion</span> 三种代价状态</li>
+  <li><strong>Predict：</strong>用轨迹的卡尔曼预测位置 vs 检测当前位置</li>
+  <li><strong>BackPredict：</strong>用轨迹的融合位置 vs 检测的反向预测位置</li>
+  <li><strong>Fusion：</strong>按 <code>COST_STATE_PREDICT_RATION</code> 加权混合两者</li>
+  <li>最终 <code>cost_matrix = 1 - similarity_matrix</code>，类别不匹配设为 inf</li>
+</ul>
+<p class="ref">来源：<code>tracker/matching.py:1-211</code></p>
+</div>
+
+<!-- 3.6 -->
+<h3 id="l3-cost">3.6 代价函数详解</h3>
+<div class="card">
+<p><strong>文件：</strong><code>tracker/cost_function.py:1-253</code></p>
+
+<h4>cal_rotation_gdiou_inbev() — RO-GDIoU 3D</h4>
+<p><code>:34-97</code> — <span class="badge badge-blue">BEV 阶段的核心代价函数</span></p>
+<ul>
+  <li><strong>输入：</strong>box_trk (Trajectory), box_det (BBox), cfg, cal_flag</li>
+  <li><strong>输出：</strong>ro_gdiou (float) — 旋转广义 IoU 分数</li>
+  <li><strong>算法步骤：</strong>
+    <ol>
+      <li>根据 cal_flag 取对应的 pose（Predict 或 Fusion）</li>
+      <li>调用 <code>transform_3dbox2corners()</code> 生成 8 个 3D 角点</li>
+      <li>提取 BEV 角点（索引 [2,3,7,6]），调用 <code>cal_rotation_iou_inbev()</code> 计算旋转 IoU</li>
+      <li>用 <code>cv2.minAreaRect()</code> 计算最小包围矩形</li>
+      <li>计算额外面积比 (<code>extra_area / universe_area</code>)、中心距离比 (<code>center_dist / union_dist</code>)</li>
+      <li>公式: <code>ro_gdiou = iou - w1 × (extra_area / universe_area) - w2 × (center_dist² / union_dist²)</code></li>
+    </ol>
+  </li>
+  <li>权重 w1, w2 来自 <code>cfg["THRESHOLD"]["BEV"]["WEIGHT_RO_GDIOU"]</code></li>
+</ul>
+
+<h4>cal_sdiou_inrv() — SDIoU 2D</h4>
+<p><code>:205-252</code> — <span class="badge badge-green">RV 阶段的核心代价函数</span></p>
+<ul>
+  <li>仅处理 <code>CAM_FRONT</code> 相机的检测</li>
+  <li><strong>公式：</strong><code>sdiou = iou + area_ratio × distance_ratio × aspect_ratio</code></li>
+  <li>综合考虑面积比、中心距比、长宽比三个维度</li>
+</ul>
+
+<h4>cal_rotation_iou_inbev()</h4>
+<p><code>:12-31</code> — BEV 旋转 IoU 计算</p>
+<ul>
+  <li>使用 <code>cv2.rotatedRectangleIntersection()</code> 计算两个旋转矩形的交集</li>
+  <li>用 <code>cv2.convexHull()</code> + <code>cv2.contourArea()</code> 计算交集面积</li>
+</ul>
+<p class="ref">来源：<code>tracker/cost_function.py:1-253</code></p>
+</div>
+
+<!-- 3.7 -->
+<h3 id="l3-kalman-detail">3.7 卡尔曼滤波器详解</h3>
+<div class="card">
+<p><strong>文件：</strong><code>kalmanfilter/base_kalman.py:14-107</code>, <code>kalmanfilter/extend_kalman.py:1-520</code></p>
+
+<h4>KF_Base 抽象基类</h4>
+<p><code>base_kalman.py:14-107</code></p>
+<table>
+  <tr><th>变量</th><th>维度</th><th>含义</th></tr>
+  <tr><td><code>n</code></td><td>标量</td><td>状态维度</td></tr>
+  <tr><td><code>m</code></td><td>标量</td><td>观测维度</td></tr>
+  <tr><td><code>x</code></td><td>(n, 1)</td><td>状态向量</td></tr>
+  <tr><td><code>P</code></td><td>(n, n)</td><td>状态协方差矩阵</td></tr>
+  <tr><td><code>Q</code></td><td>(n, n)</td><td>过程噪声协方差</td></tr>
+  <tr><td><code>R</code></td><td>(m, m)</td><td>观测噪声协方差</td></tr>
+  <tr><td><code>F</code></td><td>(n, n)</td><td>状态转移雅可比矩阵</td></tr>
+  <tr><td><code>H</code></td><td>(m, n)</td><td>观测雅可比矩阵</td></tr>
+</table>
+
+<h4>EKF_CV — 匀速模型</h4>
+<p><code>extend_kalman.py:147-213</code></p>
+<ul>
+  <li><strong>状态向量：</strong><code>[x, y, vx, vy]</code> (n=4)</li>
+  <li><strong>观测向量：</strong><code>[x, y]</code> 或 <code>[x, y, vx, vy]</code> (m=2 或 4)</li>
+  <li><strong>状态转移：</strong><code>x' = x + dt·vx</code>, <code>y' = y + dt·vy</code></li>
+  <li><strong>雅可比矩阵 F：</strong></li>
+</ul>
+<pre>
+F = | 1  0  dt  0  |
+    | 0  1  0   dt |
+    | 0  0  1   0  |
+    | 0  0  0   1  |
+</pre>
+
+<h4>EKF_CA — 匀加速模型</h4>
+<p><code>extend_kalman.py:215-287</code></p>
+<ul>
+  <li><strong>状态向量：</strong><code>[x, y, vx, vy, ax, ay]</code> (n=6)</li>
+  <li><strong>状态转移：</strong><code>x' = x + dt·vx + 0.5·dt²·ax</code>, <code>vx' = vx + dt·ax</code></li>
+</ul>
+
+<h4>EKF_CTRA — 恒转弯率加速模型</h4>
+<p><code>extend_kalman.py:289-450</code></p>
+<ul>
+  <li><strong>状态向量：</strong><code>[x, y, yaw, v, ω, a]</code> (n=6)</li>
+  <li><strong>状态转移（非线性）：</strong></li>
+</ul>
+<pre>
+x' = x + (1/ω²)·[(v·ω + a·ω·dt)·sin(yaw+ω·dt) + a·cos(yaw+ω·dt)
+                   - v·ω·sin(yaw) - a·cos(yaw)]
+y' = y + (1/ω²)·[(-v·ω - a·ω·dt)·cos(yaw+ω·dt) + a·sin(yaw+ω·dt)
+                   + v·ω·cos(yaw) - a·sin(yaw)]
+yaw' = yaw + ω·dt
+v' = v + a·dt
+</pre>
+<ul>
+  <li>雅可比矩阵 F 为 6×6 矩阵，各元素是状态转移函数的偏导数（<code>:330-423</code>）</li>
+  <li><strong>适用场景：</strong>弯道行驶等需要考虑转弯率的复杂运动</li>
+</ul>
+
+<h4>KF_YAW — 朝向滤波器</h4>
+<p><code>extend_kalman.py:15-78</code></p>
+<ul>
+  <li><strong>状态：</strong><code>[yaw, yaw_rate]</code> (n=2, m=2)</li>
+  <li>特殊处理：弧度归一化 <code>norm_radian()</code> 避免角度回绕问题</li>
+</ul>
+
+<h4>KF_SIZE — 尺寸滤波器</h4>
+<p><code>extend_kalman.py:80-145</code></p>
+<ul>
+  <li><strong>状态：</strong><code>[l, w, dl, dw]</code> (n=4, m=2)</li>
+  <li>用 CV 模型平滑尺寸估计</li>
+</ul>
+
+<h4>噪声参数对照（以 KITTI car 为例）</h4>
+<table>
+  <tr><th>滤波器</th><th>P (初始协方差)</th><th>Q (过程噪声)</th><th>R (观测噪声)</th></tr>
+  <tr><td>EKF_CV (pose)</td><td>[1,1,500,500]</td><td>[0.5,0.5,5,5]</td><td>[0.1,0.1]</td></tr>
+  <tr><td>KF_YAW</td><td>[0.1,0.1]</td><td>[0.1,0.1]</td><td>[0.2,5.0]</td></tr>
+  <tr><td>KF_SIZE</td><td>[1,1,10,10]</td><td>[0.5,0.5,1.5,1.5]</td><td>[0.02,0.02]</td></tr>
+</table>
+<p class="ref">来源：<code>kalmanfilter/base_kalman.py:14-107</code>, <code>kalmanfilter/extend_kalman.py:1-520</code>, <code>config/kitti.yaml:68-116</code></p>
+</div>
+
+<!-- 3.8 -->
+<h3 id="l3-dataset">3.8 BaseVersionTrackingDataset</h3>
+<div class="card">
+<p><strong>文件：</strong><code>dataset/baseversion_dataset.py:14-62</code></p>
+<p><strong>调用位置：</strong><code>main.py:41</code></p>
+
+<p>实现了 <code>__len__</code> 和 <code>__getitem__</code>，支持下标访问。</p>
+
+<h4>__getitem__(index) 详细流程</h4>
+<ol>
+  <li>从 <code>scene_data[index]</code> 解析 frame_id, timestamp, bboxes, transform_matrix</li>
+  <li>构造 <code>Frame</code> 对象</li>
+  <li><strong>类别过滤：</strong>仅保留 <code>CATEGORY_MAP_TO_NUMBER</code> 中定义的类别</li>
+  <li><strong>分数过滤：</strong>根据 <code>TRACKING_MODE</code>（ONLINE/OFFLINE）选择不同的 <code>INPUT_SCORE</code> 阈值</li>
+  <li><strong>NMS（仅 nuScenes）：</strong>调用 <code>filter_bboxes_with_nms()</code>
+    <ul>
+      <li>内部构建 14 维检测向量 [x,y,z,w,l,h,vx,vy,qw,qx,qy,qz,score,label]</li>
+      <li>调用 <code>obtain_box_bottom_corners()</code> 生成 BEV 底面角点</li>
+      <li>调用 <code>blend_nms()</code> 执行 BEV IoU NMS</li>
+    </ul>
+  </li>
+  <li>将过滤后的 bbox 字典封装为 <code>BBox</code> 对象</li>
+</ol>
+<p class="ref">来源：<code>dataset/baseversion_dataset.py:14-62</code>, <code>utils/nusc_utils.py:280-324</code></p>
+</div>
+
+<!-- 3.9 -->
+<h3 id="l3-config">3.9 配置变量映射表</h3>
+<div class="card">
+<p><strong>文件：</strong><code>config/kitti.yaml</code> — 以 KITTI 为例</p>
+
+<table>
+  <tr><th>配置路径 (YAML)</th><th>代码中使用位置</th><th>含义</th></tr>
+  <tr><td><code>DATASET</code></td><td><code>main.py:119</code></td><td>数据集名称</td></tr>
+  <tr><td><code>SPLIT</code></td><td><code>main.py:129</code></td><td>"val" / "test" 数据划分</td></tr>
+  <tr><td><code>DETECTOR</code></td><td><code>main.py:129</code></td><td>检测器名称（virconv 等）</td></tr>
+  <tr><td><code>TRACKING_MODE</code></td><td><code>main.py:57</code>, <code>baseversion_dataset.py:45</code></td><td>"ONLINE" / "GLOBAL"</td></tr>
+  <tr><td><code>IS_RV_MATCHING</code></td><td><code>base_tracker.py:69</code></td><td>是否启用 RV 二阶段匹配</td></tr>
+  <tr><td><code>FRAME_RATE</code></td><td><code>trajectory.py:49</code></td><td>帧率 → dt = 1/FRAME_RATE</td></tr>
+  <tr><td><code>CATEGORY_MAP_TO_NUMBER</code></td><td><code>trajectory.py:27</code>, <code>matching.py:129</code></td><td>类别 → 编号映射</td></tr>
+  <tr><td><code>MATCHING.BEV.COST_MODE</code></td><td><code>matching.py:187</code></td><td>BEV 代价函数类型</td></tr>
+  <tr><td><code>MATCHING.BEV.MATCHING_MODE</code></td><td><code>matching.py:143</code></td><td>匹配算法 (Hungarian/Greedy)</td></tr>
+  <tr><td><code>MATCHING.BEV.COST_STATE</code></td><td><code>matching.py:188</code></td><td>代价状态 (Predict/BackPredict/Fusion)</td></tr>
+  <tr><td><code>THRESHOLD.BEV.COST_THRE</code></td><td><code>matching.py:146</code></td><td>BEV 匹配阈值</td></tr>
+  <tr><td><code>THRESHOLD.BEV.WEIGHT_RO_GDIOU</code></td><td><code>cost_function.py:88-89</code></td><td>RO-GDIoU 权重 w1, w2</td></tr>
+  <tr><td><code>THRESHOLD.INPUT_SCORE</code></td><td><code>baseversion_dataset.py:46-49</code></td><td>检测分数过滤阈值</td></tr>
+  <tr><td><code>THRESHOLD.NMS_THRE</code></td><td><code>nusc_utils.py:321</code></td><td>NMS IoU 阈值</td></tr>
+  <tr><td><code>THRESHOLD.TRAJECTORY_THRE.*</code></td><td><code>trajectory.py:51-74</code></td><td>轨迹管理阈值组（见下表）</td></tr>
+  <tr><td><code>KALMAN_FILTER_POSE.MOTION_MODE</code></td><td><code>trajectory.py:125-130</code></td><td>运动模型选择 CV/CA/CTRA</td></tr>
+  <tr><td><code>KALMAN_FILTER_POSE.CV.N/M/NOISE</code></td><td><code>trajectory.py:79-87</code></td><td>CV 模型的维度 + PQR 噪声矩阵</td></tr>
+  <tr><td><code>KALMAN_FILTER_YAW.CV.NOISE</code></td><td><code>trajectory.py:106-113</code></td><td>朝向滤波器噪声</td></tr>
+  <tr><td><code>KALMAN_FILTER_SIZE.CV.NOISE</code></td><td><code>trajectory.py:115-122</code></td><td>尺寸滤波器噪声</td></tr>
+</table>
+
+<h4>TRAJECTORY_THRE 参数详解</h4>
+<table>
+  <tr><th>参数</th><th>KITTI car 默认值</th><th>作用</th></tr>
+  <tr><td><code>CACHE_BBOX_LENGTH</code></td><td>1000</td><td>轨迹保存的历史 BBox 最大数量</td></tr>
+  <tr><td><code>PREDICT_BBOX_LENGTH</code></td><td>30</td><td>遮挡态可持续预测的最大帧数</td></tr>
+  <tr><td><code>MAX_UNMATCH_LENGTH</code></td><td>0</td><td>已确认轨迹允许的最大未匹配帧数（超过 → 遮挡态）</td></tr>
+  <tr><td><code>CONFIRMED_TRACK_LENGTH</code></td><td>1</td><td>轨迹确认所需最小匹配次数</td></tr>
+  <tr><td><code>CONFIRMED_DET_SCORE</code></td><td>0.7</td><td>快速确认所需的检测分数阈值</td></tr>
+  <tr><td><code>CONFIRMED_MATCHED_SCORE</code></td><td>0.3</td><td>快速确认所需的匹配分数阈值</td></tr>
+  <tr><td><code>IS_FILTER_PREDICT_BOX</code></td><td>0</td><td>是否过滤纯预测框（0=不过滤，即 det_score==0 的框也输出）</td></tr>
+</table>
+<p class="ref">来源：<code>config/kitti.yaml:1-127</code></p>
+</div>
+
+<!-- Footer -->
+<div style="margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--border); color: var(--text-secondary); font-size: 13px;">
+  <p>📝 本笔记由系统化代码阅读生成 | 仓库: <strong>MCTrack</strong> — Unified 3D Multi-Object Tracking Framework</p>
+  <p>📄 版权: megvii-research © 2024 | 论文: IROS 2025</p>
+</div>
+
+</div>
+</body>
+</html>
