@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCTrack 代码仓库阅读笔记</title>
+<style>
+  :root {
+    --primary: #2563eb;
+    --primary-light: #dbeafe;
+    --accent: #f59e0b;
+    --bg: #f8fafc;
+    --card-bg: #ffffff;
+    --text: #1e293b;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --code-bg: #f1f5f9;
+    --sidebar-w: 260px;
+    --success: #22c55e;
+    --danger: #ef4444;
+    --info: #06b6d4;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+  }
+
+  /* ── Sidebar Navigation ── */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    width: var(--sidebar-w);
+    height: 100vh;
+    background: #1e293b;
+    color: #cbd5e1;
+    overflow-y: auto;
+    padding: 24px 0;
+    z-index: 100;
+  }
+  .sidebar h3 {
+    color: #fff;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    padding: 0 20px;
+    margin-bottom: 12px;
+  }
+  .sidebar a {
+    display: block;
+    padding: 7px 20px 7px 28px;
+    color: #94a3b8;
+    text-decoration: none;
+    font-size: 13px;
+    border-left: 3px solid transparent;
+    transition: all .15s;
+  }
+  .sidebar a:hover, .sidebar a.active {
+    color: #fff;
+    background: rgba(255,255,255,.06);
+    border-left-color: var(--accent);
+  }
+  .sidebar .sep {
+    height: 1px;
+    background: rgba(255,255,255,.1);
+    margin: 14px 20px;
+  }
+
+  /* ── Main Content ── */
+  .main {
+    margin-left: var(--sidebar-w);
+    padding: 0 40px 80px;
+    max-width: 960px;
+  }
+
+  /* ── Cover ── */
+  .cover {
+    text-align: center;
+    padding: 64px 20px 48px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+  .cover h1 { font-size: 42px; font-weight: 800; color: var(--primary); }
+  .cover .subtitle { font-size: 18px; color: var(--text-muted); margin: 12px 0 24px; }
+  .cover .tags { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+
+  /* ── Badge ── */
+  .badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .badge-blue   { background: var(--primary-light); color: var(--primary); }
+  .badge-amber  { background: #fef3c7; color: #92400e; }
+  .badge-green  { background: #dcfce7; color: #166534; }
+  .badge-red    { background: #fee2e2; color: #991b1b; }
+  .badge-gray   { background: #f1f5f9; color: #475569; }
+  .badge-cyan   { background: #cffafe; color: #155e75; }
+
+  /* ── Sections ── */
+  .section { margin-bottom: 48px; }
+  .section > h2 {
+    font-size: 26px;
+    font-weight: 700;
+    padding-bottom: 10px;
+    border-bottom: 3px solid var(--primary);
+    margin-bottom: 24px;
+  }
+  .section > h3, .subsection > h3 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 28px 0 14px;
+    color: var(--primary);
+  }
+  .section h4 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 20px 0 10px;
+    color: #334155;
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+  .card-title {
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ── Code Block ── */
+  pre {
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 8px;
+    padding: 16px 20px;
+    overflow-x: auto;
+    font-family: 'Fira Code', 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 12px 0;
+  }
+  code {
+    font-family: 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
+    font-size: 13px;
+  }
+  :not(pre) > code {
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #c2410c;
+  }
+
+  /* ── Table ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 14px;
+  }
+  th {
+    background: var(--primary);
+    color: #fff;
+    text-align: left;
+    padding: 10px 14px;
+  }
+  th:first-child { border-radius: 6px 0 0 0; }
+  th:last-child  { border-radius: 0 6px 0 0; }
+  td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  tr:hover td { background: #f8fafc; }
+
+  /* ── Highlight Box ── */
+  .highlight-box {
+    border-left: 4px solid var(--primary);
+    background: var(--primary-light);
+    padding: 14px 18px;
+    border-radius: 0 8px 8px 0;
+    margin: 14px 0;
+    font-size: 14px;
+  }
+  .highlight-box.warning {
+    border-left-color: var(--accent);
+    background: #fffbeb;
+  }
+  .highlight-box.success {
+    border-left-color: var(--success);
+    background: #f0fdf4;
+  }
+
+  /* ── Flow Diagram (ASCII) ── */
+  .flow-diagram {
+    background: #0f172a;
+    color: #67e8f9;
+    border-radius: 8px;
+    padding: 20px;
+    font-family: 'Fira Code', monospace;
+    font-size: 12.5px;
+    line-height: 1.5;
+    overflow-x: auto;
+    white-space: pre;
+    margin: 16px 0;
+  }
+
+  /* ── Utility ── */
+  .flex { display: flex; gap: 16px; flex-wrap: wrap; }
+  .flex > * { flex: 1; min-width: 260px; }
+  p { margin-bottom: 12px; }
+  ul, ol { margin: 8px 0 12px 24px; }
+  li { margin-bottom: 4px; }
+  .ref { font-size: 12px; color: var(--text-muted); }
+
+  /* ── Print ── */
+  @media print {
+    .sidebar { display: none; }
+    .main { margin-left: 0; max-width: 100%; }
+    pre { white-space: pre-wrap; word-wrap: break-word; }
+  }
+  @media (max-width: 800px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; padding: 0 16px 40px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ SIDEBAR ═══════════════════ -->
+<nav class="sidebar">
+  <h3>📖 阅读笔记</h3>
+  <a href="#cover">封面</a>
+  <div class="sep"></div>
+  <h3>第一层：项目地图</h3>
+  <a href="#overview">项目概览</a>
+  <a href="#dir-tree">目录结构</a>
+  <a href="#tech-stack">技术选型</a>
+  <a href="#ci-cd">构建与部署</a>
+  <div class="sep"></div>
+  <h3>第二层：核心主干</h3>
+  <a href="#entry">入口分析</a>
+  <a href="#call-chain">核心调用链</a>
+  <a href="#interfaces">关键接口摘要</a>
+  <div class="sep"></div>
+  <h3>第三层：深度解析</h3>
+  <a href="#module-deps">模块依赖图</a>
+  <a href="#core-logic">核心业务逻辑</a>
+  <a href="#key-classes">关键类/函数详解</a>
+  <a href="#design-patterns">设计模式</a>
+  <div class="sep"></div>
+  <h3>总结</h3>
+  <a href="#summary">总结与洞察</a>
+</nav>
+
+<!-- ═══════════════════ MAIN CONTENT ═══════════════════ -->
+<div class="main">
+
+<!-- ── COVER ── -->
+<div class="cover" id="cover">
+  <h1>MCTrack</h1>
+  <p class="subtitle">面向自动驾驶的统一3D多目标跟踪框架<br><em>A Unified 3D Multi-Object Tracking Framework for Autonomous Driving</em></p>
+  <div class="tags">
+    <span class="badge badge-blue">Python 3.8</span>
+    <span class="badge badge-amber">Extended Kalman Filter</span>
+    <span class="badge badge-green">KITTI / nuScenes / Waymo</span>
+    <span class="badge badge-red">IROS 2025</span>
+    <span class="badge badge-cyan">NumPy / OpenCV / LAP</span>
+    <span class="badge badge-gray">megvii-research</span>
+  </div>
+</div>
+
+<!-- ╔═══════════════════════════════════════════════════════╗
+     ║        第一层：建立"地图"                              ║
+     ╚═══════════════════════════════════════════════════════╝ -->
+<div class="section" id="overview">
+  <h2>第一层：项目地图</h2>
+
+  <h3>1.1 项目概览</h3>
+  <div class="highlight-box">
+    <strong>MCTrack</strong> 是由旷视研究院（megvii-research）开发的<strong>统一3D多目标跟踪（MOT）</strong>框架。
+    该项目在 KITTI、nuScenes、Waymo 三大自动驾驶数据集上均达到 SOTA 水平，论文已被 <strong>IROS 2025</strong> 接收。
+    核心技术栈为 <strong>Python + NumPy + 扩展卡尔曼滤波（EKF）+ 匈牙利/贪心匹配算法</strong>，采用多进程并行处理每个场景。
+    项目提出了一种名为 <strong>BaseVersion</strong> 的统一数据格式，将不同数据集的检测结果转换为标准格式，使研究者可以专注于跟踪算法本身。
+  </div>
+
+  <h3 id="dir-tree">1.2 目录结构</h3>
+<pre>MCTrack/
+├── main.py                      # 🚀 主入口：多进程跟踪管线
+├── requirements.txt             # 📦 Python 依赖
+├── README.md                    # 📄 项目文档
+│
+├── config/                      # ⚙️ 配置文件
+│   ├── kitti.yaml               #    KITTI 数据集参数
+│   ├── kitti_offline.yaml       #    KITTI 离线模式
+│   ├── nuscenes.yaml            #    nuScenes 数据集参数
+│   ├── nuscenes_motion_eval.yaml#    运动评估参数
+│   └── waymo.yaml               #    Waymo 数据集参数
+│
+├── tracker/                     # 🎯 核心跟踪模块
+│   ├── base_tracker.py          #    Base3DTracker 跟踪器主类
+│   ├── trajectory.py            #    Trajectory 轨迹管理
+│   ├── bbox.py                  #    BBox 3D边界框
+│   ├── matching.py              #    匈牙利/贪心匹配算法
+│   ├── cost_function.py         #    代价函数（RO-GDIOU等）
+│   └── frame.py                 #    Frame 帧数据容器
+│
+├── kalmanfilter/                # 🔬 卡尔曼滤波器
+│   ├── base_kalman.py           #    KF_Base 抽象基类
+│   └── extend_kalman.py         #    5种EKF实现（CV/CA/CTRA/YAW/SIZE）
+│
+├── dataset/                     # 📊 数据集加载
+│   └── baseversion_dataset.py   #    BaseVersionTrackingDataset
+│
+├── preprocess/                  # 🔄 数据预处理
+│   ├── convert2baseversion.py   #    预处理入口
+│   ├── convert_kitti.py         #    KITTI → BaseVersion
+│   ├── convert_nuscenes.py      #    nuScenes → BaseVersion
+│   ├── convert_waymo.py         #    Waymo → BaseVersion
+│   ├── ego_info.py              #    自车信息处理
+│   └── motion_dataset/          #    运动评估数据集
+│
+├── evaluation/                  # 📈 评估模块
+│   ├── static_evaluation/
+│   │   ├── kitti/               #    KITTI HOTA 评估
+│   │   ├── nuscenes/eval.py     #    nuScenes 评估
+│   │   └── waymo/eval.py        #    Waymo 评估
+│   ├── motion_evaluation/       #    运动指标评估
+│   └── eval_motion.py           #    运动评估入口
+│
+├── utils/                       # 🛠️ 工具函数
+│   ├── utils.py                 #    通用数学/几何工具
+│   ├── kitti_utils.py           #    KITTI 格式转换与保存
+│   ├── nusc_utils.py            #    nuScenes 格式转换与保存
+│   ├── waymo_utils/             #    Waymo 工具集
+│   └── file_process.py          #    文件与配置加载
+│
+└── docs/                        # 📝 文档资源
+    ├── MC_logo.png
+    └── Fig1.png</pre>
+
+  <h3 id="tech-stack">1.3 技术选型</h3>
+  <table>
+    <tr><th>类别</th><th>技术</th><th>用途</th></tr>
+    <tr><td>语言</td><td><code>Python 3.8</code></td><td>主开发语言</td></tr>
+    <tr><td>数值计算</td><td><code>NumPy 1.22</code></td><td>矩阵运算、状态向量</td></tr>
+    <tr><td>线性分配</td><td><code>lap</code></td><td>匈牙利算法求解器（<code>lapjv</code>）</td></tr>
+    <tr><td>几何运算</td><td><code>OpenCV</code></td><td>旋转矩形交集计算</td></tr>
+    <tr><td>四元数</td><td><code>pyquaternion</code></td><td>3D方向表示与旋转</td></tr>
+    <tr><td>配置管理</td><td><code>PyYAML + EasyDict</code></td><td>YAML 配置加载</td></tr>
+    <tr><td>加速</td><td><code>numba 0.58</code></td><td>JIT 编译加速</td></tr>
+    <tr><td>评估工具</td><td><code>motmetrics 1.1.3</code></td><td>MOT 指标计算</td></tr>
+    <tr><td>数据集SDK</td><td><code>nuscenes-devkit 1.1.11</code></td><td>nuScenes 数据操作</td></tr>
+    <tr><td>曲线拟合</td><td><code>scipy.optimize</code></td><td>轨迹速度趋势估计</td></tr>
+    <tr><td>多边形运算</td><td><code>Shapely</code></td><td>BEV 多边形交集</td></tr>
+    <tr><td>多进程</td><td><code>multiprocessing</code></td><td>多场景并行跟踪</td></tr>
+  </table>
+
+  <h3 id="ci-cd">1.4 构建与部署</h3>
+  <div class="highlight-box warning">
+    ⚠️ 项目<strong>没有 CI/CD 配置</strong>（无 <code>.github/workflows/</code>、<code>Dockerfile</code>、<code>Makefile</code>）。
+    部署方式为手动 Python 环境搭建：<code>conda create → pip install → python main.py</code>。
+  </div>
+  <div class="card">
+    <div class="card-title">🏃 运行方式</div>
+<pre># 创建环境
+conda create -n MCTrack python=3.8
+conda activate MCTrack
+pip install -r requirements.txt
+
+# 运行跟踪 + 评估（KITTI 为例）
+python main.py --dataset kitti -e -p 8
+
+# 参数说明
+#   --dataset {kitti,nuscenes,waymo}  数据集选择
+#   -e / --eval                       是否运行评估
+#   -p / --process &lt;N&gt;                多进程数
+#   -m / --mode                       离线模式
+#   --debug                           调试模式（仅跑2个场景）</pre>
+  </div>
+
+  <div class="highlight-box success">
+    <strong>第一层总结：</strong>MCTrack 是一个纯 Python 实现的3D多目标跟踪系统，采用扩展卡尔曼滤波 + 两阶段匹配（BEV + RV）的架构，
+    通过 BaseVersion 统一数据格式支持 KITTI/nuScenes/Waymo 三大数据集，以多进程方式并行处理各场景的目标跟踪与评估。
+  </div>
+</div>
+
+<!-- ╔═══════════════════════════════════════════════════════╗
+     ║        第二层：找到"主干"                              ║
+     ╚═══════════════════════════════════════════════════════╝ -->
+<div class="section" id="entry">
+  <h2>第二层：核心主干</h2>
+
+  <h3>2.1 入口分析 — <code>main.py</code></h3>
+  <div class="card">
+    <div class="card-title">📌 入口文件结构 <span class="badge badge-gray">main.py (L1-177)</span></div>
+    <p>整个程序分为 <strong>4 个阶段</strong>：</p>
+    <ol>
+      <li><strong>配置加载</strong>（L106-123）：根据 <code>--dataset</code> 参数选择 YAML 配置文件，创建时间戳目录保存结果</li>
+      <li><strong>检测数据加载</strong>（L127-133）：从 <code>data/base_version/{dataset}/{detector}/{split}.json</code> 加载预计算的检测结果</li>
+      <li><strong>多进程跟踪</strong>（L145-158）：使用 <code>multiprocessing.Pool</code> 对每个场景并行调用 <code>run()</code> 函数</li>
+      <li><strong>结果保存与评估</strong>（L160-176）：根据数据集类型保存不同格式的结果，可选执行评估</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📌 <code>run()</code> 函数 — 单场景跟踪管线 <span class="badge badge-gray">main.py L27-87</span></div>
+<pre>def run(scene_id, scenes_data, cfg, args, tracking_results):
+    dataset = BaseVersionTrackingDataset(scene_id, scene_data, cfg)  # 加载数据集
+    tracker = Base3DTracker(cfg)                                     # 初始化跟踪器
+
+    for frame in dataset:                        # 逐帧遍历
+        all_traj = tracker.track_single_frame(frame)  # 核心：单帧跟踪
+        all_trajs[frame_id] = result_info             # 存储结果
+
+    if cfg["TRACKING_MODE"] == "GLOBAL":         # 离线模式后处理
+        trajs = tracker.post_processing()        # 轨迹平滑 + 插值
+        # 插值填充缺失帧 + 过滤低分轨迹</pre>
+  </div>
+
+  <h3 id="call-chain">2.2 核心调用链</h3>
+  <div class="flow-diagram">┌─────────────────────────────────────────────────────────────────────────┐
+│                         main.py (入口)                                   │
+│  1. 加载 YAML 配置                                                       │
+│  2. 加载 JSON 检测数据                                                    │
+│  3. multiprocessing.Pool → run()                                        │
+└────────────────────────────┬────────────────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      run() 单场景管线                                    │
+│  BaseVersionTrackingDataset(scene_id, data, cfg)                        │
+│  Base3DTracker(cfg)                                                     │
+│  for frame in dataset:                                                  │
+│      tracker.track_single_frame(frame)                                  │
+└────────────────────────────┬────────────────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│              Base3DTracker.track_single_frame()                         │
+│                                                                         │
+│  ① predict_before_associate()                                           │
+│     └─ 每条轨迹 → Trajectory.predict()                                   │
+│        └─ 5个 Kalman Filter 预测下一状态                                   │
+│                                                                         │
+│  ② 第一阶段：BEV 匹配                                                    │
+│     ├─ match_trajs_and_dets(trajs, dets, cfg)                           │
+│     │   ├─ cost_calculate_general()                                     │
+│     │   │   └─ cal_rotation_gdiou_inbev()  ← RO-GDIOU-3D 代价           │
+│     │   └─ Hungarian() 或 Greedy()         ← 求解分配问题                 │
+│     ├─ 匹配成功 → Trajectory.update(bbox)                                │
+│     └─ 未匹配轨迹 → 进入第二阶段                                          │
+│                                                                         │
+│  ③ 第二阶段：RV 匹配（可选，IS_RV_MATCHING=True）                         │
+│     ├─ match_trajs_and_dets(unmatched, dets, cfg, is_rv=True)           │
+│     │   └─ cal_sdiou_inrv()                ← SDIOU-2D 代价              │
+│     ├─ 匹配成功 + 约束检查（旋转差&lt;90°, 距离&lt;5m）                          │
+│     │   └─ Trajectory.update(bbox)                                      │
+│     └─ 未匹配 → Trajectory.unmatch_update()                              │
+│                                                                         │
+│  ④ 新目标初始化                                                          │
+│     └─ 未匹配检测 → new Trajectory(track_id, init_bbox, cfg)             │
+│                                                                         │
+│  ⑤ 轨迹生命周期管理                                                      │
+│     └─ status_flag==4 → 移入 all_dead_trajs                              │
+└─────────────────────────────────────────────────────────────────────────┘</div>
+
+  <h3 id="interfaces">2.3 关键接口摘要</h3>
+
+  <div class="flex">
+    <div class="card">
+      <div class="card-title">🏗️ Base3DTracker</div>
+      <p class="ref">tracker/base_tracker.py L12-161</p>
+      <ul>
+        <li><code>track_single_frame(frame_info) → dict</code></li>
+        <li><code>predict_before_associate()</code></li>
+        <li><code>get_output_trajs(frame_id) → dict</code></li>
+        <li><code>post_processing() → dict</code></li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">📍 Trajectory</div>
+      <p class="ref">tracker/trajectory.py L18-378</p>
+      <ul>
+        <li><code>predict()</code> — 多滤波器预测</li>
+        <li><code>update(bbox, score) → BBox</code></li>
+        <li><code>unmatch_update(frame_id)</code></li>
+        <li><code>filtering()</code> — 后处理插值</li>
+        <li><code>cal_diff_velocity() → list</code></li>
+      </ul>
+    </div>
+  </div>
+  <div class="flex">
+    <div class="card">
+      <div class="card-title">📦 BBox</div>
+      <p class="ref">tracker/bbox.py L10-180</p>
+      <ul>
+        <li><code>transform_3dbox2corners(pose) → np.ndarray(8,3)</code></li>
+        <li><code>transform_bbox_global2lidar(fusion, g2l)</code></li>
+        <li><code>transform_bbox_lidar2camera(fusion, l2c)</code></li>
+        <li><code>backward_prediction() → list</code></li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">🔬 KF_Base（抽象）</div>
+      <p class="ref">kalmanfilter/base_kalman.py L14-106</p>
+      <ul>
+        <li><code>update(z) → np.array</code> — EKF预测+更新</li>
+        <li><code>predict() → np.array</code> — 状态预测</li>
+        <li><code>f(x)</code> — 状态转移（抽象）</li>
+        <li><code>getF(x)</code> — 雅可比矩阵（抽象）</li>
+        <li><code>h(x)</code> — 观测函数（抽象）</li>
+        <li><code>getH(x)</code> — 观测雅可比（抽象）</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ╔═══════════════════════════════════════════════════════╗
+     ║        第三层：详细梳理                                ║
+     ╚═══════════════════════════════════════════════════════╝ -->
+<div class="section" id="module-deps">
+  <h2>第三层：深度解析</h2>
+
+  <h3>3.1 模块依赖关系图</h3>
+  <div class="flow-diagram">                        ┌─────────────┐
+                        │   main.py    │
+                        └──────┬──────┘
+               ┌───────────────┼───────────────────────────────────────┐
+               ▼               ▼                   ▼                   ▼
+      ┌────────────────┐ ┌───────────────┐  ┌────────────┐   ┌────────────────┐
+      │    dataset/    │ │   tracker/    │  │ evaluation/ │   │    utils/       │
+      │ baseversion_   │ │ base_tracker  │  │ kitti/nusc/ │   │ kitti/nusc/    │
+      │  dataset.py    │ │               │  │   waymo     │   │ waymo/utils    │
+      └───────┬────────┘ └───┬───┬───┬───┘  └────────────┘   │ file_process   │
+              │              │   │   │                        └───────┬────────┘
+              │              │   │   │                                │
+              ▼              │   │   │                                │
+      ┌────────────┐         │   │   │                                │
+      │ Frame/BBox │◀────────┘   │   │                                │
+      └────────────┘             │   │                                │
+                                 ▼   ▼                                │
+                    ┌──────────────┐ ┌──────────────┐                 │
+                    │  matching.py │ │ trajectory.py│                 │
+                    └──────┬───────┘ └──────┬───────┘                 │
+                           │                │                         │
+                           ▼                ▼                         │
+                  ┌────────────────┐ ┌──────────────┐                 │
+                  │ cost_function  │ │ kalmanfilter/ │                 │
+                  │  .py           │ │ base_kalman   │                 │
+                  └────────┬───────┘ │ extend_kalman │                 │
+                           │         └───────────────┘                 │
+                           ▼                                          │
+                  ┌────────────────┐                                  │
+                  │  utils/utils   │◀─────────────────────────────────┘
+                  │ (NMS, IoU,     │
+                  │  mask, radian) │
+                  └────────────────┘</div>
+
+  <h3 id="core-logic">3.2 核心业务逻辑</h3>
+
+  <h4>流程一：数据预处理（BaseVersion 生成）</h4>
+  <div class="card">
+    <div class="card-title">🔄 坐标转换流水线 <span class="badge badge-amber">preprocess/</span></div>
+    <p>将各数据集的原始检测结果统一转换为 BaseVersion JSON 格式：</p>
+    <ol>
+      <li><strong>读取标定参数</strong>：Camera 内参（P2）、LiDAR→Camera 外参（<code>Tr_velo_to_cam</code>）</li>
+      <li><strong>读取自车位姿</strong>：4×4 变换矩阵，用于 LiDAR→全局坐标转换</li>
+      <li><strong>坐标转换链</strong>：Camera 3D → LiDAR → Global（使用齐次坐标变换）</li>
+      <li><strong>输出</strong>：统一的 JSON 格式，包含 global_xyz, global_yaw, lwh, velocity 等字段</li>
+    </ol>
+    <p class="ref">📁 preprocess/convert_kitti.py L238-296 — <code>convert_baseversion_bboxes()</code></p>
+  </div>
+
+  <h4>流程二：单帧跟踪（核心管线）</h4>
+  <div class="card">
+    <div class="card-title">🎯 两阶段匹配策略 <span class="badge badge-blue">tracker/base_tracker.py L33-138</span></div>
+    <p><strong>第一阶段（BEV 匹配）</strong>：在鸟瞰视角（Bird's Eye View）下使用 <code>RO-GDIOU-3D</code> 代价函数计算跟踪轨迹与检测的关联代价矩阵，
+    通过匈牙利算法或贪心算法求解最优分配。</p>
+    <p><strong>第二阶段（RV 匹配，可选）</strong>：对第一阶段未匹配的轨迹和检测，在重投影视图（Re-projected View）下使用 <code>SDIOU-2D</code> 代价函数进行二次匹配。
+    额外约束：旋转差 &lt; 90° 且距离 &lt; 5m（L108）。</p>
+  </div>
+
+  <h4>流程三：轨迹生命周期管理</h4>
+  <div class="card">
+    <div class="card-title">🔄 轨迹状态机 <span class="badge badge-green">tracker/trajectory.py L76</span></div>
+<pre>状态定义：
+  0: initialization (初始化)    ← 新轨迹创建时
+  1: confirmed    (已确认)      ← track_length &gt; confirmed_length 或匹配分数足够高
+  2: obscured     (被遮挡)      ← confirmed 后连续 unmatch &gt; max_unmatch
+  4: dead         (已终止)      ← obscured 后连续 unmatch &gt; max_predict
+
+状态转换图：
+  [新检测] → 0(init) ─── 匹配足够多帧 ──→ 1(confirmed)
+                                              │
+                                    连续未匹配 &gt; max_unmatch
+                                              │
+                                              ▼
+                                         2(obscured)
+                                              │
+                                    连续未匹配 &gt; max_predict
+                                              │
+                                              ▼
+                                          4(dead) → 移入 all_dead_trajs</pre>
+    <p class="ref">注意：代码中 <code>status_flag</code> 初始值实际为 1（L76），注释说明曾尝试设为 0 但发现不必要。</p>
+  </div>
+
+  <h4>流程四：扩展卡尔曼滤波</h4>
+  <div class="card">
+    <div class="card-title">🔬 多运动模型滤波 <span class="badge badge-cyan">kalmanfilter/extend_kalman.py</span></div>
+    <p>每条轨迹同时维护 <strong>5 个独立的卡尔曼滤波器</strong>，根据配置选择主运动模型：</p>
+    <table>
+      <tr><th>滤波器</th><th>状态维度</th><th>状态向量</th><th>用途</th></tr>
+      <tr><td><code>EKF_CV</code></td><td>4D</td><td>[x, y, vx, vy]</td><td>匀速运动（Constant Velocity）</td></tr>
+      <tr><td><code>EKF_CA</code></td><td>6D</td><td>[x, y, vx, vy, ax, ay]</td><td>匀加速运动（Constant Acceleration）</td></tr>
+      <tr><td><code>EKF_CTRA</code></td><td>6D</td><td>[x, y, ψ, v, ω, a]</td><td>恒定转弯率加速度（最复杂的模型）</td></tr>
+      <tr><td><code>KF_YAW</code></td><td>2D</td><td>[yaw, yaw_rate]</td><td>航向角估计</td></tr>
+      <tr><td><code>KF_SIZE</code></td><td>4D</td><td>[L, W, dL, dW]</td><td>尺寸（长宽）估计</td></tr>
+    </table>
+    <p>滤波基类采用 <strong>模板方法模式</strong>：<code>KF_Base</code> 定义 <code>update()</code> 和 <code>predict()</code> 骨架，
+    子类实现 <code>f(x)</code>（状态转移）和 <code>getF(x)</code>（雅可比矩阵）。</p>
+    <p class="ref">📁 kalmanfilter/base_kalman.py L51-67 — update() 实现标准 EKF 预测-更新循环</p>
+  </div>
+
+  <h4>流程五：代价函数计算</h4>
+  <div class="card">
+    <div class="card-title">📐 RO-GDIOU-3D 代价 <span class="badge badge-red">tracker/cost_function.py L34-97</span></div>
+    <p>核心的 BEV 匹配代价函数 <code>cal_rotation_gdiou_inbev()</code> 计算公式：</p>
+<pre>RO-GDIOU = IoU − w1 × (extra_area / universe_area) − w2 × (center_distance / diagonal_distance)
+
+其中：
+  IoU        : 使用 cv2.rotatedRectangleIntersection() 计算旋转矩形交集
+  extra_area : 最小外接矩形面积 − 两个框面积并集
+  center_dist: 两框中心欧氏距离的平方
+  w1, w2     : 可配置的权重参数（按类别区分）</pre>
+    <p>该公式综合考虑了 <strong>重叠度</strong>（IoU）、<strong>空间紧凑性</strong>（extra_area 惩罚项）和 <strong>中心距离</strong>（center 惩罚项），
+    比标准 IoU 更适合旋转目标的关联。</p>
+  </div>
+
+  <h3 id="key-classes">3.3 关键类/函数详解</h3>
+
+  <!-- Key Class 1 -->
+  <div class="card">
+    <div class="card-title">① Base3DTracker <span class="badge badge-blue">tracker/base_tracker.py L12-161</span></div>
+    <h4>作用</h4>
+    <p>3D 多目标跟踪器的核心控制类，管理所有轨迹的生命周期，协调预测-匹配-更新流程。</p>
+    <h4>关键属性</h4>
+    <table>
+      <tr><th>属性</th><th>类型</th><th>说明</th></tr>
+      <tr><td><code>all_trajs</code></td><td><code>dict{int: Trajectory}</code></td><td>活跃轨迹集合</td></tr>
+      <tr><td><code>all_dead_trajs</code></td><td><code>dict{int: Trajectory}</code></td><td>已终止轨迹集合</td></tr>
+      <tr><td><code>track_id_counter</code></td><td><code>int</code></td><td>全局轨迹 ID 自增计数器</td></tr>
+    </table>
+    <h4>核心方法</h4>
+    <p><code>track_single_frame(frame_info)</code>（L33-138）：单帧跟踪主流程。依次执行预测、BEV匹配、RV匹配（可选）、新轨迹初始化、死亡轨迹清理。
+    返回当前帧所有输出轨迹的字典。</p>
+    <p><code>post_processing()</code>（L151-161）：离线模式后处理。对所有轨迹（含已终止的）调用 <code>filtering()</code> 进行插值平滑。</p>
+  </div>
+
+  <!-- Key Class 2 -->
+  <div class="card">
+    <div class="card-title">② Trajectory <span class="badge badge-blue">tracker/trajectory.py L18-378</span></div>
+    <h4>作用</h4>
+    <p>单个目标的轨迹管理类，封装了多卡尔曼滤波器的初始化、预测、更新逻辑，以及轨迹状态机的转换。</p>
+    <h4>关键方法</h4>
+    <table>
+      <tr><th>方法</th><th>行号</th><th>说明</th></tr>
+      <tr><td><code>predict()</code></td><td>L168-184</td><td>调用 pose/yaw/size 三个滤波器预测下一帧状态，更新 <code>global_xyz_lwh_yaw_predict</code></td></tr>
+      <tr><td><code>update(bbox, score)</code></td><td>L186-241</td><td>匹配成功时更新：追加 BBox、计算速度差/曲线速度、更新三个滤波器、更新融合状态、处理状态转换</td></tr>
+      <tr><td><code>unmatch_update(frame_id)</code></td><td>L243-290</td><td>未匹配时更新：使用预测值创建 fake BBox、推进滤波器、管理轨迹状态退化</td></tr>
+      <tr><td><code>filtering()</code></td><td>L299-347</td><td>后处理：线性插值填充缺失帧、计算平均 logit 检测分数</td></tr>
+    </table>
+    <h4>设计亮点</h4>
+    <p>
+      <strong>多速度估计</strong>：同时维护三种速度计算方式 — 检测器输出速度（<code>global_velocity</code>）、
+      帧间差分速度（<code>global_velocity_diff</code>，L349-361）、曲线拟合速度（<code>global_velocity_curve</code>，L363-378）。
+      代价函数可根据配置的 <code>COST_STATE</code> 选择使用预测态（Predict）、后向预测态（BackPredict）或融合态（Fusion）。
+    </p>
+  </div>
+
+  <!-- Key Class 3 -->
+  <div class="card">
+    <div class="card-title">③ BBox <span class="badge badge-blue">tracker/bbox.py L10-180</span></div>
+    <h4>作用</h4>
+    <p>3D 边界框数据容器，封装检测信息和多种状态表示（原始、预测、融合），提供坐标系转换方法。</p>
+    <h4>关键属性</h4>
+    <table>
+      <tr><th>属性</th><th>含义</th></tr>
+      <tr><td><code>global_xyz_lwh_yaw</code></td><td>原始检测的全局坐标 [x,y,z,l,w,h,yaw]</td></tr>
+      <tr><td><code>global_xyz_lwh_yaw_predict</code></td><td>卡尔曼滤波预测的状态（用于 BEV 匹配）</td></tr>
+      <tr><td><code>global_xyz_lwh_yaw_fusion</code></td><td>滤波融合后的状态（更平滑）</td></tr>
+      <tr><td><code>global_xyz_lwh_yaw_last</code></td><td>后向预测位置（当前位置 − 速度×0.5，L54-56）</td></tr>
+    </table>
+    <h4>核心方法</h4>
+    <p><code>transform_3dbox2corners(pose)</code>（L93-139）：将 7 参数表示 [x,y,z,l,w,h,yaw] 转换为 8 个角点坐标。
+    使用 <code>pyquaternion.Quaternion</code> 进行旋转变换。</p>
+    <p><code>backward_prediction()</code>（L54-56）：反向预测上一帧位置，公式为 <code>pos_last = pos − velocity × 0.5</code>。
+    这是 <code>BackPredict</code> 代价状态的关键——检测结果反推到上一帧位置，与轨迹融合态做匹配。</p>
+  </div>
+
+  <!-- Key Class 4 -->
+  <div class="card">
+    <div class="card-title">④ EKF_CTRA — 最复杂的运动模型 <span class="badge badge-blue">kalmanfilter/extend_kalman.py L289-449</span></div>
+    <h4>作用</h4>
+    <p>恒定转弯率加速度（Constant Turn Rate and Acceleration）扩展卡尔曼滤波器，用于建模弯道行驶等非线性运动。</p>
+    <h4>状态向量</h4>
+    <p><code>[x, y, ψ(yaw), v(速度), ω(角速度), a(加速度)]</code> — 6维状态</p>
+    <h4>状态转移方程（L309-328）</h4>
+<pre># 当 ω ≠ 0（转弯）时：
+x_new = x + (1/ω²) × [(v×ω + a×ω×dt)×sin(ψ+ω×dt)
+                      + a×cos(ψ+ω×dt) - v×ω×sin(ψ) - a×cos(ψ)]
+y_new = y + (1/ω²) × [(-v×ω - a×ω×dt)×cos(ψ+ω×dt)
+                      + a×sin(ψ+ω×dt) + v×ω×cos(ψ) - a×sin(ψ)]
+ψ_new = ψ + ω×dt
+v_new = v + a×dt
+
+# 当 ω ≈ 0（直行）时：退化为恒定加速度模型</pre>
+    <p><strong>雅可比矩阵</strong>（L330-423）：6×6 矩阵，包含对 ψ, v, ω, a 的偏导数，实现精确线性化。</p>
+  </div>
+
+  <!-- Key Function 5 -->
+  <div class="card">
+    <div class="card-title">⑤ match_trajs_and_dets() <span class="badge badge-blue">tracker/matching.py L107-160</span></div>
+    <h4>作用</h4>
+    <p>轨迹-检测匹配的主函数，协调代价计算和求解算法。</p>
+    <h4>参数与返回值</h4>
+<pre>def match_trajs_and_dets(trajs, dets, cfg, transform_matrix=None, is_rv=False):
+    """
+    参数:
+        trajs: List[Trajectory]     - 当前活跃轨迹列表
+        dets:  List[BBox]           - 当前帧检测列表
+        cfg:   dict                 - 配置（匹配模式、代价阈值等）
+        is_rv: bool                 - 是否为 RV（重投影视图）匹配
+    返回:
+        matched_indices: np.array   - 匹配对 [(traj_idx, det_idx), ...]
+        costs: np.array             - 每对匹配的代价值
+    """</pre>
+    <h4>关键逻辑</h4>
+    <p>
+      1. 调用 <code>cost_calculate_general()</code> 计算 N_traj × N_det 代价矩阵（L124-126）<br>
+      2. 生成类别掩码 <code>mask_tras_dets()</code>，阻止跨类别匹配（L131-140）<br>
+      3. 根据配置调用 <code>Hungarian()</code> 或 <code>Greedy()</code> 求解（L143-156）<br>
+      4. 代价矩阵在 <code>cost_calculate_general()</code> 中被转换：<code>cost = 1 - similarity</code>（L211），将相似度转为最小化代价
+    </p>
+  </div>
+
+  <!-- Key Function 6 -->
+  <div class="card">
+    <div class="card-title">⑥ Hungarian() / Greedy() <span class="badge badge-blue">tracker/matching.py L12-104</span></div>
+    <h4>两种匹配算法对比</h4>
+    <table>
+      <tr><th>特性</th><th>Hungarian（L61-104）</th><th>Greedy（L12-58）</th></tr>
+      <tr><td>求解器</td><td><code>lap.lapjv()</code> 线性分配</td><td>逐检测贪心选最小代价</td></tr>
+      <tr><td>最优性</td><td>全局最优</td><td>局部最优</td></tr>
+      <tr><td>时间复杂度</td><td>O(n³)</td><td>O(n²)</td></tr>
+      <tr><td>适用场景</td><td>目标数量较少、精度优先</td><td>目标数量多、速度优先</td></tr>
+      <tr><td>代价阈值</td><td><code>cost_limit</code> 参数</td><td>阈值逐行检查</td></tr>
+    </table>
+    <p>两者共享相同的接口签名：<code>(cost_matrix, thresholds) → (m_det, m_tra, um_det, um_tra, costs)</code>。</p>
+  </div>
+
+  <!-- Key Class 7 -->
+  <div class="card">
+    <div class="card-title">⑦ BaseVersionTrackingDataset <span class="badge badge-blue">dataset/baseversion_dataset.py L15-62</span></div>
+    <h4>作用</h4>
+    <p>统一数据加载接口，将 BaseVersion JSON 数据按帧封装为 <code>Frame</code> + <code>BBox</code> 对象。</p>
+    <h4>关键逻辑</h4>
+    <p>
+      <code>__getitem__(index)</code>（L23-62）：<br>
+      1. 按帧 ID 加载检测数据<br>
+      2. 按类别过滤（<code>CATEGORY_LIST</code>）<br>
+      3. 按检测分数阈值过滤（在线/离线模式阈值不同，L45-55）<br>
+      4. 对 nuScenes 数据执行 NMS（L57-59）<br>
+      5. 封装为 <code>Frame(frame_id, bboxes, timestamp, transform_matrix)</code>
+    </p>
+  </div>
+
+  <!-- Key Function 8 -->
+  <div class="card">
+    <div class="card-title">⑧ KF_Base.update() <span class="badge badge-blue">kalmanfilter/base_kalman.py L51-67</span></div>
+    <h4>EKF 预测-更新算法实现</h4>
+<pre>def update(self, z):
+    # ─── 预测步骤 ───
+    self.x = self.f(self.x)           # 状态转移：x̂ = f(x)
+    self.F = self.getF(self.x)        # 获取雅可比矩阵 F
+    self.P = F × P × F^T + Q         # 协方差预测
+
+    # ─── 更新步骤 ───
+    G = P × H^T × (H×P×H^T + R)^-1  # 卡尔曼增益
+    self.x += G × (z − h(x))         # 状态校正（测量残差加权）
+    self.P = (I − G×H) × P           # 协方差更新
+
+    return x.reshape(n)               # 返回更新后状态</pre>
+    <p class="ref">注意：预测和更新合并在同一个 <code>update()</code> 调用中（L56-67），这意味着每次 <code>update()</code> 调用都会先执行一次预测。
+    单独的 <code>predict()</code> 方法（L69-73）仅返回预测值，不改变内部状态（但实际上 <code>f(x)</code> 可能有副作用）。</p>
+  </div>
+
+  <h3 id="design-patterns">3.4 设计模式与架构风格</h3>
+
+  <div class="flex">
+    <div class="card">
+      <div class="card-title">🏛️ 模板方法模式</div>
+      <p><code>KF_Base</code> 定义了 EKF 的骨架（<code>update/predict</code>），子类 <code>EKF_CV</code>、<code>EKF_CA</code>、<code>EKF_CTRA</code> 等只需实现 <code>f(x)</code>、<code>getF(x)</code>、<code>h(x)</code>、<code>getH(x)</code> 四个抽象方法。</p>
+      <p class="ref">📁 kalmanfilter/base_kalman.py L14-106</p>
+    </div>
+    <div class="card">
+      <div class="card-title">🔀 策略模式</div>
+      <p>匹配算法（Hungarian/Greedy）和代价函数（RO_GDIOU_3D/SDIOU_2D/DIOU_2D 等）均通过配置动态选择：</p>
+<pre># matching.py L143-156
+if cfg[...]["MATCHING_MODE"] == "Hungarian":
+    result = Hungarian(cost_matrix, thresholds)
+elif cfg[...]["MATCHING_MODE"] == "Greedy":
+    result = Greedy(cost_matrix, thresholds)</pre>
+    </div>
+  </div>
+  <div class="flex">
+    <div class="card">
+      <div class="card-title">🤖 状态机模式</div>
+      <p>轨迹生命周期通过 <code>status_flag</code> 管理状态转换（0→1→2→4），每帧的 <code>update()</code> 或 <code>unmatch_update()</code> 驱动状态变化。不同状态决定轨迹是否输出、是否继续预测。</p>
+      <p class="ref">📁 tracker/trajectory.py L76, L235-239, L281-288</p>
+    </div>
+    <div class="card">
+      <div class="card-title">🏗️ 管道编排模式</div>
+      <p><code>main.py</code> 作为管道编排器，顺序协调 数据加载 → 逐帧跟踪 → 后处理 → 格式转换 → 评估 的完整流程。每个阶段由独立模块实现，通过函数调用串联。</p>
+      <p class="ref">📁 main.py L27-87, L90-177</p>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">📐 数据容器模式</div>
+    <p><code>Frame</code> 和 <code>BBox</code> 类作为纯数据容器（类似于 Data Class），附带坐标变换方法。
+    <code>BBox</code> 维护同一检测的多种状态表示（原始、预测、融合、后向预测），供不同代价函数按需取用。</p>
+    <p class="ref">📁 tracker/frame.py L9-24, tracker/bbox.py L10-180</p>
+  </div>
+</div>
+
+<!-- ╔═══════════════════════════════════════════════════════╗
+     ║        总结与洞察                                     ║
+     ╚═══════════════════════════════════════════════════════╝ -->
+<div class="section" id="summary">
+  <h2>总结与洞察</h2>
+
+  <h3>💡 亮点设计</h3>
+  <div class="card">
+    <ol>
+      <li><strong>BaseVersion 统一格式</strong>：将 KITTI/nuScenes/Waymo 三个差异巨大的数据集统一为相同的 JSON 格式，
+      极大降低了跟踪算法的数据适配成本。研究者只需关注跟踪逻辑本身。</li>
+      <li><strong>两阶段匹配策略</strong>：先 BEV（3D 鸟瞰）匹配主体目标，再 RV（2D 相机重投影）匹配遗漏目标，
+      利用互补视角提升召回率，同时通过旋转角和距离约束避免误匹配。</li>
+      <li><strong>多运动模型并行</strong>：每条轨迹同时初始化 CV/CA/CTRA 三种运动模型，通过配置为不同类别选择最适合的模型
+      （如：行人用 CV、车辆用 CTRA），兼顾通用性与精度。</li>
+      <li><strong>RO-GDIOU 代价函数</strong>：在标准旋转 IoU 基础上引入空间紧凑性和中心距离惩罚，
+      对远距离、低重叠的目标提供更好的关联区分度（<code>cost_function.py L34-97</code>）。</li>
+      <li><strong>BackPredict 机制</strong>：利用检测结果的速度反向预测到上一帧时刻（<code>bbox.py L54-56</code>），
+      与轨迹融合态做匹配，补偿预测误差。可通过配置选择 Predict/BackPredict/Fusion 三种代价计算状态。</li>
+    </ol>
+  </div>
+
+  <h3>⚠️ 潜在问题</h3>
+  <div class="card">
+    <ol>
+      <li><strong>KF update() 副作用</strong>：<code>KF_Base.update()</code>（L51-67）将预测和更新合并在一个方法中，
+      调用一次 update 会自动推进一步预测。在 <code>unmatch_update()</code>（trajectory.py L246-254）中，
+      先调用 <code>predict()</code> 再调用 <code>update(predict_state)</code>，相当于执行了<strong>两次</strong>预测步骤，
+      这可能导致协方差过度膨胀。</li>
+      <li><strong>缺少单元测试</strong>：项目没有任何测试文件（无 <code>tests/</code> 目录、无 <code>*_test.py</code>），
+      关键的 EKF 数值正确性和匹配算法边界条件缺乏验证。</li>
+      <li><strong>无 CI/CD</strong>：缺少自动化测试和构建流程，代码质量依赖人工审查。</li>
+      <li><strong>硬编码约束</strong>：RV 匹配中的旋转差阈值 90° 和距离阈值 5m 是硬编码的
+      （<code>base_tracker.py L108</code>），不同场景可能需要不同的值。</li>
+      <li><strong>内存管理</strong>：<code>_cache_bbox_len</code> 控制轨迹最大缓存长度（通过 <code>pop(0)</code> 移除旧 BBox），
+      在 Python list 上 <code>pop(0)</code> 是 O(n) 操作，使用 <code>collections.deque</code> 会更高效。</li>
+    </ol>
+  </div>
+
+  <h3>📚 值得学习的地方</h3>
+  <div class="card">
+    <ol>
+      <li><strong>清晰的分层架构</strong>：代码组织为 <code>dataset → tracker → evaluation</code> 三层，
+      <code>kalmanfilter</code> 和 <code>utils</code> 作为独立工具模块，依赖关系单向流动，易于理解和扩展。</li>
+      <li><strong>配置驱动设计</strong>：几乎所有超参数（匹配模式、代价函数、卡尔曼噪声、阈值）都通过 YAML 配置管理，
+      每个类别可以有不同的参数配置，切换数据集只需更换配置文件。</li>
+      <li><strong>多进程架构</strong>：利用 <code>multiprocessing.Pool</code> 并行处理独立场景，
+      使用 <code>Manager().dict()</code> 共享结果，简洁高效（<code>main.py L145-157</code>）。</li>
+      <li><strong>丰富的代码注释</strong>：关键函数都有详细的 docstring，说明参数含义和返回值格式，
+      降低了代码阅读门槛。</li>
+      <li><strong>EKF 实现教科书级别</strong>：<code>KF_Base</code> + 5 种子类的实现结构清晰，
+      特别是 <code>EKF_CTRA</code> 的复杂非线性状态转移和雅可比矩阵推导值得深入学习。</li>
+    </ol>
+  </div>
+
+  <h3>📊 性能数据概览</h3>
+  <table>
+    <tr><th>数据集</th><th>检测器</th><th>集合</th><th>核心指标</th><th>值</th></tr>
+    <tr><td>KITTI</td><td>VirConv</td><td>test</td><td>HOTA</td><td><strong>81.07</strong></td></tr>
+    <tr><td>KITTI (offline)</td><td>VirConv</td><td>test</td><td>HOTA</td><td><strong>82.75</strong></td></tr>
+    <tr><td>nuScenes</td><td>LargeKernel3D</td><td>test</td><td>AMOTA</td><td><strong>0.763</strong></td></tr>
+    <tr><td>Waymo</td><td>CTRL</td><td>test</td><td>MOTA/L2</td><td><strong>0.7344</strong></td></tr>
+  </table>
+  <p class="ref">数据来源：README.md — Section 2. Results</p>
+
+  <div class="highlight-box success">
+    <strong>总结：</strong>MCTrack 是一个工程质量较高的学术级3D MOT框架。其核心创新在于 BaseVersion 统一数据格式、
+    两阶段 BEV+RV 匹配策略、以及多运动模型 EKF 融合。代码结构清晰、配置灵活、文档完善，
+    是学习 3D 多目标跟踪算法实现的优秀参考项目。
+  </div>
+</div>
+
+</div><!-- /.main -->
+
+</body>
+</html>
